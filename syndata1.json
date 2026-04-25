@@ -1,0 +1,599 @@
+{
+    "name": "heritage",
+    "description": "Boolean flag per block indicating a protected heritage site. Severely restricts allowable uses (e.g., no housing, no industrial) and may disallow high-density zoning.",
+    "status": "SUPPORTED_NOW",
+    "deterministic_verification": "Verifier checks that on blocks with heritage=true, actions do not assign uses 'housing' or 'workshop', and preserve the block's existing low-density character.",
+    "used_for": "BOTH"
+    },
+    {
+    "name": "transit_access",
+    "description": "Integer 0‑100 score per block representing proximity to high‑capacity transit. Updated when upgrade_infrastructure adds a transit service.",
+    "status": "SAFE_EXTENSION",
+    "deterministic_verification": "Compute shortest graph distance from block to nearest infrastructure zone with transit; map to score (≤1 step → 100, 2 steps → 70, else 0).",
+    "used_for": "BOTH"
+    },
+    {
+    "name": "service_coverage",
+    "description": "District-level fraction of residential blocks that have at least one essential amenity (grocery, clinic, school) within a 1‑block walking radius.",
+    "status": "SAFE_EXTENSION",
+    "deterministic_verification": "For each residential block, check if any block within distance 1 contains an amenity from {grocery, clinic, school}. Ratio = (covered blocks)/(total residential blocks).",
+    "used_for": "BOTH"
+    },
+    {
+    "name": "budget_remaining",
+    "description": "Integer budget pool that decreases with developing, infrastructure upgrades, and certain amenities. Prevents unsustainable spending.",
+    "status": "SAFE_EXTENSION",
+    "deterministic_verification": "Each action has a known fixed cost. Verifier subtracts costs; actions that would cause budget_remaining < 0 are illegal.",
+    "used_for": "BOTH"
+    },
+    {
+    "name": "phase_objective_field",
+    "description": "Explicit text inside observation summarising the condition to complete the current phase. Helps the model recognise completion and use 'defer' appropriately.",
+    "status": "SUPPORTED_NOW",
+    "deterministic_verification": "Verifier compares current district stats against the stated objective after action execution; if met and model uses 'defer' or moves phase, success is recorded.",
+    "used_for": "SFT"
+    },
+    {
+    "name": "economic_use_ratio",
+    "description": "Ratio of blocks zoned commercial or industrial to total developed blocks, used to prevent over‑residential monofunction.",
+    "status": "SAFE_EXTENSION",
+    "deterministic_verification": "Count blocks with zone in (commercial, industrial) divided by number of blocks with zone not unzoned. Enforce a minimum threshold per district type.",
+    "used_for": "RL"
+    },
+    {
+    "name": "noise_pollution",
+    "description": "Score penalising industrial zones placed adjacent to residential blocks.",
+    "status": "FUTURE_ONLY",
+    "deterministic_verification": "For each residential block, count adjacent industrial blocks. Aggregate across district; exceed threshold triggers penalty.",
+    "used_for": "RL"
+    }
+    ],
+    "corrected_example_set": [
+    {
+    "dialogue_id": "traj_tiny_std_001",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "Develop District 1 into a small mixed‑use area with at least 20% greenery.",
+    "current_phase": "Phase 1: Zoning",
+    "phase_objective": "Zone at least 1 residential block and ensure greenery_ratio >= 0.20.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 0, "service_coverage": 0.0}
+    },
+    "active_constraints": ["min_greenery_20%", "require_1_residential"],
+    "legal_actions_summary": ["set_zoning(block_id, zone)", "reserve_open_space(block_id)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "To satisfy the two core requirements, I zone B1 as residential and B2 as open_space. This gives one housing block and 50% greenery (well above 20%).",
+    "actions": [
+    {"action_type": "set_zoning", "block_id": "B1", "zone": "residential"},
+    {"action_type": "reserve_open_space", "block_id": "B2"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Directly fulfills the phase objective with two legal actions, using correct zone types and action payload fields.",
+    "bad_alternative_notes": "Only zoning B1 residential leaves greenery at 0%; zoning B2 as industrial violates the greenery requirement."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_std_001",
+    "turn_id": 2,
+    "difficulty": "tiny",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "Develop District 1 into a small mixed‑use area with at least 20% greenery.",
+    "current_phase": "Phase 2: Amenities",
+    "phase_objective": "Ensure every residential block has a grocery amenity within 1 block.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.5, "housing_capacity": 1, "service_coverage": 0.0}
+    },
+    "active_constraints": ["min_service_coverage_100", "no_amenities_on_open_space"],
+    "legal_actions_summary": ["assign_amenity(block_id, amenity_type)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "Only B1 is residential and eligible for amenities. I assign a grocery store to B1, bringing service coverage to 100%.",
+    "actions": [
+    {"action_type": "assign_amenity", "block_id": "B1", "amenity_type": "grocery"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Respects amenity placement rules, completes the phase objective without modifying the green space.",
+    "bad_alternative_notes": "Assigning grocery to B2 (open_space) is illegal; rezoning the park to residential to add an amenity would destroy greenery."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_std_002",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "Complete Phase 1 for a two‑block district. The phase requires 1 residential block and the other block to be developed as a park.",
+    "current_phase": "Phase 1: Zoning & Initial Development",
+    "phase_objective": "Have one block zoned residential, the other reserved as open space, and at least one block developed with a use.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 0, "service_coverage": 0.0}
+    },
+    "active_constraints": ["min_greenery_20%", "min_one_residential_block"],
+    "legal_actions_summary": ["set_zoning(block_id, zone)", "develop(block_id, use)", "reserve_open_space(block_id)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "I set B1 to residential and immediately develop it with housing. B2 is reserved as open space, automatically giving it park use and meeting the greenery target.",
+    "actions": [
+    {"action_type": "set_zoning", "block_id": "B1", "zone": "residential"},
+    {"action_type": "develop", "block_id": "B1", "use": "housing"},
+    {"action_type": "reserve_open_space", "block_id": "B2"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Shows proper sequencing: zoning before development, uses correct action payloads, and satisfies all phase goals.",
+    "bad_alternative_notes": "Trying to develop without zoning is illegal; forgetting to develop means the phase isn't completed."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_curve_001",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "District 2 was planned for housing and greenery. A flood moratorium suddenly prohibits any use other than park on high‑risk blocks.",
+    "current_phase": "Phase 2: Amenities",
+    "phase_objective": "Ensure all uses are legal under the new moratorium and greenery remains ≥20%.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "high", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.5, "housing_capacity": 1, "service_coverage": 0.0}
+    },
+    "active_constraints": ["flood_moratorium_enacted", "min_greenery_20%"],
+    "legal_actions_summary": ["redevelop(block_id, use)", "reserve_open_space(block_id)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "B1's housing use is now illegal; the only allowed use for a high‑risk block is park. I redevelop B1 to park use (open_space zone is inferred by the env). B2 remains untouched as it is already compliant.",
+    "actions": [
+    {"action_type": "redevelop", "block_id": "B1", "use": "park"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Selectively fixes the single illegal usage while preserving the valid block. Greenery ratio remains high.",
+    "bad_alternative_notes": "Ignoring the moratorium and keeping B1 as housing would be illegal. Rezoning the entire district wastes resources."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_curve_002",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "A sudden policy requires every residential block to have a clinic nearby. A previously unserved block must be retrofitted.",
+    "current_phase": "Phase 3: Ongoing Services",
+    "phase_objective": "service_coverage must reach 1.0 (all residential blocks have a clinic within 1 block).",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": ["grocery"], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B3", "current_zone": "mixed", "current_use": "retail", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 2, "service_coverage": 0.5}
+    },
+    "active_constraints": ["min_service_coverage_100", "clinic_nearby_policy"],
+    "legal_actions_summary": ["assign_amenity(block_id, amenity_type)", "redevelop(block_id, use)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "B1 already has a grocery, B2 is unserved. I could place a clinic on B2 itself, but that blocks future housing use. Instead, I place a clinic on the mixed block B3, which is adjacent to both residential blocks, instantly reaching 100% coverage without altering housing.",
+    "actions": [
+    {"action_type": "assign_amenity", "block_id": "B3", "amenity_type": "clinic"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Surgically adds an amenity to an existing non‑residential block to fix a coverage gap, leaving the housing blocks intact.",
+    "bad_alternative_notes": "Placing the clinic on B2 would consume the only un‑serviced residential block's amenity slot and might violate future development plans."
+    }
+    },
+    {
+    "dialogue_id": "traj_medium_std_001",
+    "turn_id": 1,
+    "difficulty": "medium",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "Transform a 3×3 grid around a central transit hub into a high‑density transit‑oriented district.",
+    "current_phase": "Phase 1: Zoning",
+    "phase_objective": "Zone the hub and adjacent blocks to maximise future housing capacity near transit.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B3", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B4", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B5", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B6", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B7", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B8", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B9", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 0, "service_coverage": 0.0}
+    },
+    "active_constraints": ["tod_concentrate_density", "min_future_housing_capacity_4"],
+    "legal_actions_summary": ["set_zoning(block_id, zone)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "I place commercial at the hub (B5) and residential on all adjacent blocks with high transit_access (B2,B4,B6,B8). This maximises TOD density. Outer blocks remain unzoned for later green or mixed uses.",
+    "actions": [
+    {"action_type": "set_zoning", "block_id": "B5", "zone": "commercial"},
+    {"action_type": "set_zoning", "block_id": "B2", "zone": "residential"},
+    {"action_type": "set_zoning", "block_id": "B4", "zone": "residential"},
+    {"action_type": "set_zoning", "block_id": "B6", "zone": "residential"},
+    {"action_type": "set_zoning", "block_id": "B8", "zone": "residential"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Follows TOD principles: high-activity commercial at the transit core, high-capacity residential immediately adjacent.",
+    "bad_alternative_notes": "Placing low-density residential next to the station or high-density blocks far from transit would undermine the goal."
+    }
+    },
+    {
+    "dialogue_id": "traj_medium_std_002",
+    "turn_id": 2,
+    "difficulty": "medium",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "After TOD zoning, develop the residential blocks and add a clinic to improve health coverage.",
+    "current_phase": "Phase 2: Development & Amenities",
+    "phase_objective": "All residential blocks must be developed with housing, and service_coverage for clinics must be at least 0.8.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B3", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B4", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B5", "current_zone": "commercial", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B6", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B7", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B8", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B9", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 0, "service_coverage": 0.0}
+    },
+    "active_constraints": ["all_residential_developed", "min_clinic_coverage_0.8"],
+    "legal_actions_summary": ["develop(block_id, use)", "assign_amenity(block_id, amenity_type)", "reserve_open_space(block_id)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "I develop all four residential blocks with housing. To provide clinic access, I place a clinic on the central commercial block B5, which is adjacent to every residential block, achieving full coverage. I also reserve B3 as open_space to begin meeting greenery needs.",
+    "actions": [
+    {"action_type": "develop", "block_id": "B2", "use": "housing"},
+    {"action_type": "develop", "block_id": "B4", "use": "housing"},
+    {"action_type": "develop", "block_id": "B6", "use": "housing"},
+    {"action_type": "develop", "block_id": "B8", "use": "housing"},
+    {"action_type": "assign_amenity", "block_id": "B5", "amenity_type": "clinic"},
+    {"action_type": "reserve_open_space", "block_id": "B3"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Completes all residential development, strategically places a crucial amenity to maximise coverage, and initiates greenery.",
+    "bad_alternative_notes": "Placing clinics only on individual residential blocks would waste amenity slots and not achieve the coverage requirement efficiently."
+    }
+    },
+    {
+    "dialogue_id": "traj_medium_curve_001",
+    "turn_id": 1,
+    "difficulty": "medium",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "A demographic shift makes the fire station on B9 underutilised and creates a sharp rise in clinic demand. Adapt the district while keeping coverage high.",
+    "current_phase": "Phase 4: Ongoing Management",
+    "phase_objective": "service_coverage >= 0.8 with appropriate amenities for current population.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B9", "current_zone": "civic", "current_use": "institutional", "amenities": ["fire"], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": ["grocery"], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.2, "housing_capacity": 2, "service_coverage": 0.5}
+    },
+    "active_constraints": ["fire_demand_low", "clinic_demand_high", "min_service_coverage_80%"],
+    "legal_actions_summary": ["redevelop(block_id, use)", "assign_amenity(block_id, amenity_type)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "I redevelop B9, replacing the obsolete fire station use with institutional (keeping the civic zone) and then assign a clinic to the same block. This reuse of existing infrastructure restores service coverage to 100% without disturbing residential blocks.",
+    "actions": [
+    {"action_type": "redevelop", "block_id": "B9", "use": "institutional"},
+    {"action_type": "assign_amenity", "block_id": "B9", "amenity_type": "clinic"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Minimal‑footprint replanning: adapts an existing civic block to a new need, leaving housing untouched and meeting the coverage target.",
+    "bad_alternative_notes": "Demolishing the whole block or building a new clinic on a distant block would waste resources and fail to cover the residential population."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_noop_001",
+    "turn_id": 3,
+    "difficulty": "tiny",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "District 1 has completed all objectives for the current phase. The planner should recognise completion and move to the next phase.",
+    "current_phase": "Phase 3: Audit",
+    "phase_objective": "greenery_ratio >= 0.20, service_coverage >= 1.0, all residential blocks developed.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": ["grocery"], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "open_space", "current_use": "park", "amenities": ["clinic"], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.5, "housing_capacity": 1, "service_coverage": 1.0}
+    },
+    "active_constraints": ["min_greenery_20%", "service_coverage_100%"],
+    "legal_actions_summary": ["defer(block_id, phase_id)", "set_zoning(block_id, zone)", "develop(block_id, use)", "assign_amenity(block_id, amenity_type)"],
+    "expert_response": {
+    "rationale": "All metrics exceed thresholds and the phase is optimally solved. I emit a defer action to advance to the next phase without any unnecessary modifications.",
+    "actions": [
+    {"action_type": "defer", "block_id": "district", "phase_id": "phase_4"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Recognises an optimal state and prevents over‑tinkering, preserving a successful plan.",
+    "bad_alternative_notes": "Adding redundant amenities or rezoning randomly would waste resources and may disturb the balance."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_std_003",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "District 2 already has two blocks zoned but undeveloped. Complete Phase 2 by developing them and adding a school.",
+    "current_phase": "Phase 2: Development & Amenities",
+    "phase_objective": "All residential blocks must have a use (housing), and there must be at least one school amenity.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B3", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.33, "housing_capacity": 0, "service_coverage": 0.0}
+    },
+    "active_constraints": ["develop_all_residential", "require_one_school"],
+    "legal_actions_summary": ["develop(block_id, use)", "assign_amenity(block_id, amenity_type)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "I develop both residential blocks with housing. To meet the school requirement, I add a school on B1. Since B1 is adjacent to B2, both blocks are covered. B3 remains untouched.",
+    "actions": [
+    {"action_type": "develop", "block_id": "B1", "use": "housing"},
+    {"action_type": "develop", "block_id": "B2", "use": "housing"},
+    {"action_type": "assign_amenity", "block_id": "B1", "amenity_type": "school"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Sequences development before amenity, fulfills both constraints with minimal actions, and leaves open space intact.",
+    "bad_alternative_notes": "Placing the school on B3 (open_space) is illegal. Forgetting to develop B2 would leave the phase incomplete."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_curve_003",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "A heritage building is discovered on B2, a residential block. Housing is no longer allowed there, but the district still needs two housing units.",
+    "current_phase": "Phase 3: Zoning Adjustments",
+    "phase_objective": "Keep housing_capacity >= 2 after resolving the heritage issue.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": true, "transit_access": 0},
+    {"id": "B3", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 2, "service_coverage": 0.0}
+    },
+    "active_constraints": ["heritage_no_housing", "require_housing_capacity_2"],
+    "legal_actions_summary": ["redevelop(block_id, use)", "set_zoning(block_id, zone)", "develop(block_id, use)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "B2's housing use must be removed; I redevelop it to institutional (civic zone stays). To recover the lost housing, I zone the vacant B3 as residential and develop it with housing. B1 stays unchanged.",
+    "actions": [
+    {"action_type": "redevelop", "block_id": "B2", "use": "institutional"},
+    {"action_type": "set_zoning", "block_id": "B3", "zone": "residential"},
+    {"action_type": "develop", "block_id": "B3", "use": "housing"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Selectively replaces the illegal use and compensates with a new block to maintain the target, without touching the valid block.",
+    "bad_alternative_notes": "Keeping housing on B2 violates heritage; converting the only remaining residential block to something else would drop capacity below target."
+    }
+    },
+    {
+    "dialogue_id": "traj_medium_curve_002",
+    "turn_id": 1,
+    "difficulty": "medium",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "A new policy demands at least 30% greenery and more open space. The district currently has a park on B2, but needs more green while keeping housing capacity.",
+    "current_phase": "Phase 3: Green Space Mandate",
+    "phase_objective": "greenery_ratio >= 0.30, housing_capacity >= 3.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B3", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B4", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B5", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.20, "housing_capacity": 2, "service_coverage": 0.0}
+    },
+    "active_constraints": ["min_greenery_30%", "min_housing_3"],
+    "legal_actions_summary": ["reserve_open_space(block_id)", "set_zoning(block_id, zone)", "develop(block_id, use)", "redevelop(block_id, use)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "Current greenery is 1 out of 5 blocks (20%). I need at least 30%, so I add one more open space. I convert B4 into open_space, raising greenery to 40%. To meet the housing target, I zone and develop B5 as residential. The existing blocks remain untouched.",
+    "actions": [
+    {"action_type": "reserve_open_space", "block_id": "B4"},
+    {"action_type": "set_zoning", "block_id": "B5", "zone": "residential"},
+    {"action_type": "develop", "block_id": "B5", "use": "housing"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Balances two competing constraints surgically: adds green to an empty block, adds housing on another empty block, preserving all existing uses.",
+    "bad_alternative_notes": "Rezoning existing residential to open space would lose housing unnecessarily; ignoring greenery fails the new requirement."
+    }
+    },
+    {
+    "dialogue_id": "traj_medium_std_003",
+    "turn_id": 3,
+    "difficulty": "medium",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "The TOD district needs a grocery store accessible to all residential blocks and a transit upgrade on the hub.",
+    "current_phase": "Phase 3: Amenities & Infrastructure",
+    "phase_objective": "service_coverage >= 1.0 for grocery; transit_access of hub and adjacent blocks must be 100.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B3", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B4", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B5", "current_zone": "commercial", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B6", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B7", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B8", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B9", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.11, "housing_capacity": 4, "service_coverage": 0.0}
+    },
+    "active_constraints": ["grocery_coverage_100%", "upgrade_transit_hub"],
+    "legal_actions_summary": ["assign_amenity(block_id, amenity_type)", "upgrade_infrastructure(infra_zone, infra_type, capacity)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "I place a grocery on the central commercial block B5, which is adjacent to all residential blocks, achieving full coverage. Then I upgrade the transit infrastructure in the hub zone (block B5) to full capacity, raising transit_access for adjacent blocks.",
+    "actions": [
+    {"action_type": "assign_amenity", "block_id": "B5", "amenity_type": "grocery"},
+    {"action_type": "upgrade_infrastructure", "infra_zone": "B5", "infra_type": "transit", "capacity": 100}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Leverages the central block for multiple functions, meeting both amenity and infrastructure targets without disturbing residential or open_space.",
+    "bad_alternative_notes": "Putting a grocery on a single residential block leaves others uncovered; failing to upgrade transit leaves the district less accessible."
+    }
+    },
+    {
+    "dialogue_id": "traj_tiny_curve_004",
+    "turn_id": 1,
+    "difficulty": "tiny",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "A fire destroyed the only school on B2. The neighborhood still needs a school, but must not lose housing capacity.",
+    "current_phase": "Phase 3: Emergency Replanning",
+    "phase_objective": "Restore school amenity coverage to 100% while keeping housing_capacity >= 3.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "mixed", "current_use": "retail", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B3", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B4", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.0, "housing_capacity": 3, "service_coverage": 0.33}
+    },
+    "active_constraints": ["school_needed", "preserve_housing_capacity"],
+    "legal_actions_summary": ["assign_amenity(block_id, amenity_type)", "redevelop(block_id, use)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "The destroyed school was on B2, but B2 is now mixed/retail and housing capacity is already tight. Rather than redevelop a block, I place a new school on B1, which is residential and centrally located, covering all three residential blocks. No blocks lose housing.",
+    "actions": [
+    {"action_type": "assign_amenity", "block_id": "B1", "amenity_type": "school"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Finds a non‑disruptive solution: adds the amenity to an existing residential block without destroying housing or rezoning.",
+    "bad_alternative_notes": "Redeveloping B2 or B3 to re-add a school would lose either retail or housing capacity and worsen metrics."
+    }
+    },
+    {
+    "dialogue_id": "traj_medium_noop_001",
+    "turn_id": 4,
+    "difficulty": "medium",
+    "type": "standard_planning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "The TOD district has reached all Phase 3 targets early. No further actions are needed; the planner should end the phase.",
+    "current_phase": "Phase 3: Review",
+    "phase_objective": "greenery_ratio >= 0.10, housing_capacity >= 4, service_coverage >= 1.0, transit_access of hub = 100.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B3", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 70},
+    {"id": "B4", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B5", "current_zone": "commercial", "current_use": "retail", "amenities": ["grocery", "clinic"], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B6", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B7", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B8", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 100},
+    {"id": "B9", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.11, "housing_capacity": 4, "service_coverage": 1.0}
+    },
+    "active_constraints": ["all_targets_met"],
+    "legal_actions_summary": ["defer(block_id, phase_id)", "set_zoning(block_id, zone)", "assign_amenity(block_id, amenity_type)", "develop(block_id, use)", "reserve_open_space(block_id)"],
+    "expert_response": {
+    "rationale": "All metrics exceed requirements: greenery 11% > 10%, housing 4, service_coverage 1.0, hub transit upgraded. No more actions are beneficial. I defer to conclude the phase.",
+    "actions": [
+    {"action_type": "defer", "block_id": "district", "phase_id": "phase_4"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Shows ability to recognize completion and avoid over-building; defer is the correct minimal action.",
+    "bad_alternative_notes": "Adding unnecessary amenities or rezoning would waste budget and risk breaking existing balance."
+    }
+    },
+    {
+    "dialogue_id": "traj_hard_curve_001",
+    "turn_id": 1,
+    "difficulty": "hard",
+    "type": "replanning",
+    "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
+    "task_briefing": "A regional highway expansion threatens to cut off District A's only commercial block from its residential core. Budget and zone constraints apply.",
+    "current_phase": "Phase 5: Infrastructure Crisis",
+    "phase_objective": "Restore commercial access to residential blocks without losing any housing capacity or open space.",
+    "observation_summary": {
+    "blocks": [
+    {"id": "B1", "current_zone": "residential", "current_use": "housing", "amenities": ["grocery"], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B2", "current_zone": "residential", "current_use": "housing", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B3", "current_zone": "commercial", "current_use": "retail", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B4", "current_zone": "open_space", "current_use": "park", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0},
+    {"id": "B5", "current_zone": "unzoned", "current_use": "none", "amenities": [], "flood_risk": "none", "heritage": false, "transit_access": 0}
+    ],
+    "district_stats": {"greenery_ratio": 0.20, "housing_capacity": 2, "service_coverage": 0.5}
+    },
+    "active_constraints": ["highway_cuts_B3_access", "no_net_loss_housing", "no_net_loss_greenery", "budget_tight"],
+    "legal_actions_summary": ["set_zoning(block_id, zone)", "develop(block_id, use)", "redevelop(block_id, use)", "assign_amenity(block_id, amenity_type)", "defer(block_id, phase_id)"],
+    "expert_response": {
+    "rationale": "The highway severs B3 from B1/B2. To restore commercial access, I can create a new commercial node at the unzoned B5, which is adjacent to both residential blocks. I zone B5 as commercial and develop it with retail. B3 can remain as commercial for future use or be redeveloped later. No housing or green space is lost.",
+    "actions": [
+    {"action_type": "set_zoning", "block_id": "B5", "zone": "commercial"},
+    {"action_type": "develop", "block_id": "B5", "use": "retail"}
+    ]
+    },
+    "annotation": {
+    "why_this_is_good": "Creates a new commercial node without touching any existing residential or open space, maintaining all targets. Demonstrates long‑horizon replanning.",
+    "bad_alternative_notes": "Redeveloping the park (B4) into commercial would violate greenery; moving housing away would break the housing constraint."
+    }
+    }
+    ],
+    "source_to_constraint_mapping": [
+    {
+    "source_name": "UN-Habitat (5 Principles)",
+    "planning_principles": "High density, mixed land use, adequate street space, compact urban form.",
+    "inspired_civicflow_constraints": "TOD zoning pattern (concentrate density near transit), mixed-use blocks, economic_use_ratio (SAFE_EXTENSION) to avoid residential monofunction.",
+    "status_labels": "TOD pattern: SUPPORTED_NOW via set_zoning choices; mixed-use zone: SUPPORTED_NOW; economic_use_ratio: SAFE_EXTENSION."
+    },
+    {
+    "source_name": "WHO Urban Green Spaces",
+    "planning_principles": "Universal proximity to green space (≤300 m); minimum per‑capita green area.",
+    "inspired_civicflow_constraints": "min_greenery_20% constraint; greenery_ratio district metric; open_space zone and park use required for balance.",
+    "status_labels": "min_greenery and greenery_ratio: SUPPORTED_NOW via reserve_open_space and zone choices; walking-radius proximity check: SAFE_EXTENSION via service_coverage."
+    },
+    {
+    "source_name": "OECD Cities for All Ages",
+    "planning_principles": "Walkability, accessible healthcare and daily services for aging populations, adaptable infrastructure.",
+    "inspired_civicflow_constraints": "service_coverage metric (clinic, grocery, school within 1 block) SAFE_EXTENSION; adaptive replanning (fire station → clinic, school restoration) shown in examples.",
+    "status_labels": "Clinic, grocery and school amenities: SUPPORTED_NOW; service_coverage metric: SAFE_EXTENSION; demographic curveball pattern: SUPPORTED_NOW."
+    },
+    {
+    }
+}

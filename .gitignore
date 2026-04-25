@@ -1,0 +1,33 @@
+# OS/editor
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Build/package artifacts
+build/
+dist/
+*.egg-info/
+
+# Local tool state
+.claude/
+
+# Runtime outputs/logs (keep source data and task JSONs)
+outputs/**
+!outputs/.gitkeep
+*.log
