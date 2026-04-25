@@ -38,7 +38,7 @@ except Exception as e:  # pragma: no cover
 try:
     from ..models import CivicflowAction, CivicflowObservation
     from .civicflow_env_environment import CivicflowEnvironment
-except ModuleNotFoundError:
+except ImportError:
     from models import CivicflowAction, CivicflowObservation
     from server.civicflow_env_environment import CivicflowEnvironment
 

@@ -2,40 +2,101 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Repository purpose
+## What this repo is
 
-This repo is **reference material for a Meta OpenEnv hackathon submission** (India, April 2026). It currently contains only markdown documentation — no source code, build system, or tests. Prior commits (`source codes added`, `All2All implementation`, `First working code`) introduced code that was subsequently removed in `21a1c01 Delete Downloads directory`; if source is reintroduced, update this file.
+A **Meta OpenEnv hackathon submission** (India, April 2026): **CivicFlow**, a long-horizon municipal planning environment for RL training. The agent acts as a city planner on a graph of blocks, roads, and infrastructure zones.
 
-The four markdown files are the canonical context for any work done here:
+Reference docs in the repo root explain the rules and context:
+- `Themes_and_judging_criteria.md` — judging rubric (Env Innovation 40%, Storytelling 30%, Reward 20%, Pipeline 10%) and non-negotiable submission requirements
+- `pariticipant_help_guide.md` — RL loop design, reward design, anti-hacking, stack
+- `HackathonFAQs.md` — RLVR, GRPO, reward hacking concepts
+- `hackathon_resources.md` — canonical links
 
-- [Themes_and_judging_criteria.md](Themes_and_judging_criteria.md) — the five hackathon themes and the weighted rubric (Environment Innovation 40%, Storytelling 30%, Reward Improvement 20%, Pipeline 10%). Also lists **non-negotiable submission requirements**.
-- [pariticipant_help_guide.md](pariticipant_help_guide.md) — end-to-end build guide: picking the task, the minimum RL loop, reward design, anti-reward-hacking, stack choice, team split, 1-day plan.
-- [HackathonFAQs.md](HackathonFAQs.md) — deep Q&A on RL-for-LLMs concepts (RLVR, GRPO, reward hacking, process supervision).
-- [hackathon_resources.md](hackathon_resources.md) — canonical links to OpenEnv GitHub/docs, HF hub, tutorials, and reward-engineering papers.
+## Running the server
 
-## Hard constraints from the rules
+```bash
+# From civicflow_env/ directory
+uv sync                                    # install deps
+uv run --project . server                  # run on :8000
+uv run --project . server --port 8001      # custom port
 
-When producing a submission artifact from this repo, these are stated as **non-negotiable** in `Themes_and_judging_criteria.md`:
+# Or directly with uvicorn
+uvicorn server.app:app --reload --host 0.0.0.0 --port 8000
 
-- Build on **OpenEnv (latest release)** — use its `Environment` / `MCPEnvironment` base classes, standard Gym-style API (`reset`, `step`, `state`), and a valid `openenv.yaml` manifest. Do not reinvent the interface.
-- Respect **client / server separation** — clients must never import server internals.
-- Do **not** use reserved tool names (`reset`, `step`, `state`, `close`) for MCP tools.
-- Training script must use **Unsloth or HuggingFace TRL**, ideally a re-runnable Colab.
-- Environment must be deployed to a **Hugging Face Space**; the Space URL goes in the README (judges pull from URL; post-deadline commits are ignored).
-- README must embed reward/loss plots (committed as `.png`/`.jpg`, not left only in Colab/deleted W&B runs) and link any video/blog assets. Do not commit large video files to the HF Space.
+# Dev check
+curl http://localhost:8000/health
+```
 
-## Architectural guidance (from the participant guide)
+## Running the heuristic baseline
 
-If/when building the environment in this repo, the guide prescribes a specific shape — follow it rather than improvising:
+```bash
+# From repo root; installs civicflow_env as a package first
+pip install -e civicflow_env
 
-- **Environment owns world dynamics and scoring; trainer owns optimization; model only learns to act through the interface.** Keep these separated.
-- Scaffold with the OpenEnv CLI. Environment is a Python package exposed via a **FastAPI app** with action/observation dataclasses, a state representation, and `reset`/`step` methods.
-- **Design reward before trainer.** Use *multiple independent* reward functions (execution success, correctness, format compliance, timeouts, resource use, safety, anti-cheat) — a single scalar is easy to hack.
-- **RLVR over learned reward models** when the task is verifiable. Prefer GRPO-style training (TRL).
-- **Inference, not the optimizer step, usually dominates runtime** in LLM RL — this is the stated reason Unsloth is in the stack. Factor this into perf decisions.
-- **Curriculum first, scale last**: confirm `reset`/`step`/rewards/timeouts work locally and remotely before increasing batch size or task diversity. Deploy an early version of the env to a Space before serious training to surface packaging issues.
-- **QLoRA save gotcha**: do not upcast a 4-bit model to 16-bit and then merge LoRA weights naively — use the proper merged-save path or keep adapters separate.
+python training/baselines/heuristic.py --task all --verbose
+python training/baselines/heuristic.py --task tiny_a --out results.json
+```
 
-## Working in this repo today
+## Preparing SFT data
 
-There is nothing to build, lint, or test. Edits are to the markdown files. Use standard `git` for history. If you add source code, update this file with the actual build/test/run commands rather than leaving this section in place.
+```bash
+python training/sft/prepare_sft_data.py \
+    --in syndata.json --in syndata1.json \
+    --out-json training/sft/sft_merged_clean.json \
+    --out-jsonl training/sft/sft_merged_clean.jsonl \
+    --report training/sft/sft_merge_report.json
+```
+
+## Architecture
+
+```
+civicflow_env/            # OpenEnv environment package (server side)
+├── models.py             # Frozen CivicflowAction / CivicflowObservation + ACTION_TYPES
+├── client.py             # CivicflowEnv WebSocket client (never imports server internals)
+├── tasks.py              # JSON task loader → WorldState; pick_task() selects by env var or random
+├── data/tasks/*.json     # Task fixtures: tiny_a/b/c, medium_a, hard_a, hard1
+├── openenv.yaml          # OpenEnv manifest (type: space, runtime: fastapi)
+├── pyproject.toml
+└── server/
+    ├── app.py                        # FastAPI app via openenv.create_app(), max_concurrent_envs=8
+    ├── civicflow_env_environment.py  # CivicflowEnvironment (reset/step/state); orchestrates only
+    ├── state.py                      # WorldState, Block, InfraZone, Targets, CurveballSpec dataclasses
+    └── verifier.py                   # All transition logic + scoring; pure-deterministic, no globals
+
+training/
+├── baselines/heuristic.py   # Greedy expert baseline; also generates SFT warm-start trajectories
+└── sft/prepare_sft_data.py  # Merges/cleans syndata*.json → JSONL for trainer ingestion
+```
+
+**Key separation**: `environment.py` orchestrates episodes; `verifier.py` owns all legality checking and scoring; `state.py` owns world data; `tasks.py` loads fixtures. These must stay separated — the verifier is the ground truth; never recompute legality on the client side.
+
+## Frozen contracts — do not change field names
+
+These are consumed by trainer-side reward functions and must stay stable:
+
+- `models.py` — `ACTION_TYPES`, `CivicflowAction` fields, `CivicflowObservation` fields
+- `verifier.py` — `METRIC_KEYS` (19 keys), `REWARD_COMPONENT_KEYS` (10 keys)
+- Task JSON schema — `blocks`, `infra_zones`, `targets`, `curveballs`, `planning_phases`
+
+## Environment variables
+
+| Variable | Effect |
+|---|---|
+| `CIVICFLOW_TASK_ID` | Pin the task loaded on `reset()` (e.g. `tiny_a`) |
+| `CIVICFLOW_SEED` | Deterministic seed for task selection |
+| `ENV_BASE_URL` | Used by trainer to switch between local server and HF Space |
+
+## Task difficulty tiers
+
+- **Tiny** (`tiny_a/b/c`): small grid, few constraints, no district targets — MVP/smoke tests
+- **Medium** (`medium_a`): district targets, multi-amenity, curveball
+- **Hard** (`hard_a`, `hard1`): multi-curveball, long-horizon, full district coverage + mix requirements
+
+## Hard constraints from submission rules
+
+- Build on **OpenEnv** — use `Environment` base class, standard Gym-style API (`reset`, `step`, `state`), valid `openenv.yaml`
+- **Client/server separation** — `client.py` must never import from `server/`
+- Do **not** use reserved MCP tool names (`reset`, `step`, `state`, `close`)
+- Training must use **Unsloth or HuggingFace TRL**
+- Deploy environment to a **Hugging Face Space** via `openenv push --repo-id <hf-username>/civicflow-env`
+- Commit reward/loss plots as `.png`/`.jpg` to the Space README; do not commit large video files
