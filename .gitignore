@@ -31,3 +31,9 @@ dist/
 outputs/**
 !outputs/.gitkeep
 *.log
+
+# Model weights — too large for git, store on HuggingFace Hub
+models/
+*.bin
+*.safetensors
+*.gguf

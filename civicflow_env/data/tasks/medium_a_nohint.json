@@ -1,0 +1,182 @@
+{
+  "task_id": "medium_a_nohint",
+  "briefing": "Medium-A (phased, constrained): 8-block neighbourhood in two phases. Budget=240k. Infra is TIGHT \u2014 water capacity is only 34; you MUST call upgrade_infrastructure before developing more than 3 blocks or developments will be rejected. Phase 1 (B1-B4, B7): B7 has no road access (reserve it). B4 has civic_anchor designation \u2014 only institutional/school/clinic/fire allowed. Target: 2 housing, 1 retail, 1 institutional with school; greenery>=0.20. Phase 2 (B5,B6,B8 revealed): complete to 4 housing, 1 park, school+park amenities. Upgrade water BEFORE developing all 4 housing blocks.",
+  "blocks": [
+    {
+      "block_id": "B1",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 8,
+      "sewer_demand": 6,
+      "power_demand": 12,
+      "district": "north"
+    },
+    {
+      "block_id": "B2",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 8,
+      "sewer_demand": 6,
+      "power_demand": 12,
+      "district": "north"
+    },
+    {
+      "block_id": "B3",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 8,
+      "sewer_demand": 6,
+      "power_demand": 12,
+      "district": "north"
+    },
+    {
+      "block_id": "B4",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 6,
+      "sewer_demand": 4,
+      "power_demand": 10,
+      "district": "north",
+      "future_designation": "civic_anchor"
+    },
+    {
+      "block_id": "B5",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 10,
+      "sewer_demand": 8,
+      "power_demand": 16,
+      "district": "south"
+    },
+    {
+      "block_id": "B6",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 6,
+      "sewer_demand": 4,
+      "power_demand": 10,
+      "district": "south"
+    },
+    {
+      "block_id": "B7",
+      "has_road_access": false,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 5,
+      "sewer_demand": 4,
+      "power_demand": 8,
+      "district": "north"
+    },
+    {
+      "block_id": "B8",
+      "has_road_access": true,
+      "is_protected": false,
+      "infra_zone": "I1",
+      "water_demand": 4,
+      "sewer_demand": 3,
+      "power_demand": 6,
+      "district": "south"
+    }
+  ],
+  "infra_zones": [
+    {
+      "infra_zone_id": "I1",
+      "water_capacity": 34,
+      "sewer_capacity": 55,
+      "power_capacity": 110,
+      "road_capacity": 100
+    }
+  ],
+  "edges": [
+    [
+      "B1",
+      "B2"
+    ],
+    [
+      "B2",
+      "B3"
+    ],
+    [
+      "B3",
+      "B4"
+    ],
+    [
+      "B4",
+      "B5"
+    ],
+    [
+      "B5",
+      "B6"
+    ],
+    [
+      "B6",
+      "B7"
+    ],
+    [
+      "B7",
+      "B8"
+    ]
+  ],
+  "targets": {
+    "blocks_by_use": {
+      "housing": 4,
+      "retail": 1,
+      "park": 1,
+      "institutional": 1
+    },
+    "required_amenities": [
+      "school",
+      "park"
+    ],
+    "service_radius": {
+      "school": 7,
+      "park": 7
+    },
+    "min_greenery_ratio": 0.15,
+    "max_episode_steps": 30,
+    "district_targets": {
+      "north": {
+        "required_amenities": [
+          "school"
+        ],
+        "min_greenery_ratio": 0.2,
+        "min_economic_ratio": 0.2,
+        "required_uses": {
+          "housing": 2,
+          "retail": 1
+        }
+      },
+      "south": {
+        "required_amenities": [
+          "park"
+        ],
+        "min_greenery_ratio": 0.25,
+        "min_economic_ratio": 0.0,
+        "required_uses": {
+          "housing": 2
+        }
+      }
+    }
+  },
+  "city_resources": {
+    "construction_budget": 240000.0,
+    "action_costs": {
+      "set_zoning": 2000,
+      "develop": 30000,
+      "assign_amenity": 20000,
+      "reserve_open_space": 5000,
+      "upgrade_infrastructure": 15000,
+      "redevelop": 25000,
+      "defer": 0
+    }
+  },
+  "external_ledgers": {
+    "initial_budget": 240000.0
+  }
+}

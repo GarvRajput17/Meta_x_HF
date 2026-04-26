@@ -111,7 +111,10 @@ class CivicflowObservation(Observation):
         description="Verifier metrics: illegal_action, constraint_violations, "
         "infra_overflow_count, amenity_shortfall_count, greenery_shortfall, "
         "use_target_shortfall_count, district_service_gap_count, "
-        "district_green_gap_count, district_mix_gap_count, accessibility_score, "
+        "district_green_gap_count, district_mix_gap_count, spatial_service_gap_count, "
+        "designation_violation_count, repeated_action_count, no_progress_step, open_space_oversupply_count, "
+        "city_resource_overflow_count, population_total, population_served_ratio, "
+        "budget_remaining_ratio, accessibility_score, spatial_service_score, "
         "land_use_balance_score, district_coverage_score, phase_completion_score, "
         "progress_score, affected_set_precision, affected_set_recall, "
         "unnecessary_change_count, final_valid_plan, timeout",

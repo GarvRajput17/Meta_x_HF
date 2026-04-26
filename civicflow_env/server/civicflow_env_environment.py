@@ -54,6 +54,46 @@ _BLOCK_MUTATORS = {"set_zoning", "develop", "reserve_open_space",
                    "assign_amenity", "redevelop", "defer"}
 
 
+def _maybe_advance_phase(w) -> str | None:
+    """If current phase targets are met, reveal next batch of blocks and update targets."""
+    if not w.pending_phases:
+        return None
+    if verifier._progress(w) < 0.999 or verifier._violations(w) != 0:
+        return None
+    next_phase = w.pending_phases.pop(0)
+    w.phase_idx += 1
+    # Reveal new blocks (constraints already baked into block definitions in the task JSON).
+    for block_id in next_phase.get("new_block_ids", []):
+        b = w._hidden_blocks.pop(block_id, None)
+        if b is not None:
+            w.blocks[block_id] = b
+    # Rebuild adjacency for all currently revealed blocks.
+    adj = {bid: [] for bid in w.blocks}
+    for edge in w._all_edges:
+        if not isinstance(edge, list) or len(edge) != 2:
+            continue
+        a, b_id = str(edge[0]), str(edge[1])
+        if a in adj and b_id in adj:
+            adj[a].append(b_id)
+            adj[b_id].append(a)
+    for bid in adj:
+        adj[bid] = sorted(set(adj[bid]))
+    w.adjacency = adj
+    # Update cumulative targets from next phase.
+    pt = next_phase["targets"]
+    t = w.targets
+    t.blocks_by_use = dict(pt["blocks_by_use"])
+    t.required_amenities = list(pt["required_amenities"])
+    t.min_greenery_ratio = float(pt["min_greenery_ratio"])
+    if "district_targets" in pt:
+        t.district_targets = dict(pt["district_targets"])
+    if "service_radius" in pt:
+        t.service_radius = {k: int(v) for k, v in pt["service_radius"].items()}
+    if "max_population" in pt:
+        t.max_population = int(pt["max_population"])
+    return next_phase["name"]
+
+
 def _instance_seed() -> int:
     base = os.environ.get("CIVICFLOW_SEED")
     if base is not None:
@@ -125,49 +165,53 @@ class CivicflowEnvironment(Environment):
         else:
             legal, message = verifier.apply_action(w, action)
 
-        # Curveball mechanic: any curveballs whose fire_at_step has been
-        # reached fire now and mutate the world.
-        cb_fired_indices = verifier.maybe_fire_curveballs(w)
-
-        # Track block touches AFTER the FIRST curveball announcement. Actions
-        # submitted on the firing step were sent blind (the agent only sees
-        # the curveball in *this* step's observation), so they don't count.
-        if (legal and w.first_fire_step is not None
-                and self._state.step_count > w.first_fire_step
-                and action.action_type in _BLOCK_MUTATORS and action.block_id):
-            w.blocks_touched_after_curveball.add(action.block_id)
-
         w.action_history.append(action.model_dump())
 
         timeout = self._state.step_count >= w.targets.max_episode_steps
         metrics = verifier.compute_metrics(
             w, last_action_legal=legal, last_action_was_mutator=False, timeout=timeout,
+            prev_metrics=self._prev_metrics,
         )
         terminal_success = bool(metrics["final_valid_plan"])
         self._done = bool(terminal_success or timeout)
 
         components = verifier.compute_reward_components(
             metrics, prev_metrics=self._prev_metrics, done=self._done,
+            last_action_type=action.action_type,
         )
         self._prev_metrics = dict(metrics)
         reward = round(sum(components.values()), 4)
 
+        # Check if current phase is complete; if so, reveal next batch of blocks.
+        advanced_phase = _maybe_advance_phase(w)
+        if advanced_phase:
+            # Recompute metrics with newly revealed blocks.
+            metrics = verifier.compute_metrics(
+                w, last_action_legal=legal, last_action_was_mutator=False, timeout=timeout,
+                prev_metrics=self._prev_metrics,
+            )
+            terminal_success = bool(metrics["final_valid_plan"])
+            self._done = bool(terminal_success or timeout)
+            components = verifier.compute_reward_components(
+                metrics, prev_metrics=self._prev_metrics, done=self._done,
+                last_action_type=action.action_type,
+            )
+            self._prev_metrics = dict(metrics)
+            reward = round(sum(components.values()), 4)
+
         briefing_lines = [
             f"step {self._state.step_count}: " + ("OK — " if legal else "REJECTED — ") + message,
         ]
-        for i in cb_fired_indices:
-            briefing_lines.append(f"CURVEBALL #{i+1}: {w.curveballs[i].description}")
+        if advanced_phase:
+            briefing_lines.append(
+                f"PHASE ADVANCE → '{advanced_phase}': {len(w.blocks)} blocks now revealed."
+            )
         if self._done:
             if terminal_success:
                 briefing_lines.append("TERMINAL: plan valid and complete.")
             elif timeout:
                 briefing_lines.append("TERMINAL: timeout reached.")
 
-        any_fired = any(w.curveballs_fired)
-        active_text = " | ".join(
-            f"#{i+1}: {w.curveballs[i].description}"
-            for i, f in enumerate(w.curveballs_fired) if f
-        ) or None
         phase = verifier.current_phase_info(w)
 
         return CivicflowObservation(
@@ -179,17 +223,14 @@ class CivicflowEnvironment(Environment):
             phase_objective=phase["objective"],
             last_metrics=metrics,
             last_reward_components=components,
-            curveball_active=any_fired,
-            curveball_text=active_text,
+            curveball_active=False,
+            curveball_text=None,
             task_id=w.task_id,
             step_index=self._state.step_count,
             timeout=timeout,
             done=self._done,
             reward=reward,
-            metadata={
-                "history_len": len(w.action_history),
-                "blocks_touched_after_curveball": sorted(w.blocks_touched_after_curveball),
-            },
+            metadata={"history_len": len(w.action_history)},
         )
 
     # ------------------------------------------------------------------ state

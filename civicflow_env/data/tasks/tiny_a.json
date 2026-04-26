@@ -1,24 +1,47 @@
 {
   "task_id": "tiny_a",
-  "briefing": "Tiny-A: 8-block neighbourhood on one arterial road, single infrastructure zone I1. Goal: produce 4 housing blocks, 1 retail block, 1 park, while siting a school and meeting a 15% greenery floor. No curveball.",
+  "briefing": "Tiny-A (phased): 6-block neighbourhood revealed in two phases. Phase 1 — 4 blocks (B1-B4): build 2 housing, 1 retail, 1 park. Phase 2 — 2 more blocks (B5-B6) revealed when phase 1 is complete: add 1 housing, site a school and ensure the park amenity is in place. IMPORTANT: set_zoning before develop. Use residential→housing, commercial→retail, civic/open_space→park.",
   "blocks": [
-    {"block_id": "B1", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6,  "power_demand": 12},
-    {"block_id": "B2", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6,  "power_demand": 12},
-    {"block_id": "B3", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6,  "power_demand": 12},
-    {"block_id": "B4", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6,  "power_demand": 12},
-    {"block_id": "B5", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 10, "sewer_demand": 8,  "power_demand": 16},
-    {"block_id": "B6", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 6,  "sewer_demand": 4,  "power_demand": 10},
-    {"block_id": "B7", "has_road_access": false, "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 5,  "sewer_demand": 4,  "power_demand": 8},
-    {"block_id": "B8", "has_road_access": true,  "is_protected": false, "is_floodrisk": false, "infra_zone": "I1", "water_demand": 4,  "sewer_demand": 3,  "power_demand": 6}
+    {"block_id": "B1", "has_road_access": true, "is_protected": false, "infra_zone": "I1", "water_demand": 8, "sewer_demand": 6, "power_demand": 12},
+    {"block_id": "B2", "has_road_access": true, "is_protected": false, "infra_zone": "I1", "water_demand": 8, "sewer_demand": 6, "power_demand": 12},
+    {"block_id": "B3", "has_road_access": true, "is_protected": false, "infra_zone": "I1", "water_demand": 8, "sewer_demand": 6, "power_demand": 12},
+    {"block_id": "B4", "has_road_access": true, "is_protected": false, "infra_zone": "I1", "water_demand": 6, "sewer_demand": 4, "power_demand": 10},
+    {"block_id": "B5", "has_road_access": true, "is_protected": false, "infra_zone": "I1", "water_demand": 6, "sewer_demand": 4, "power_demand": 10},
+    {"block_id": "B6", "has_road_access": true, "is_protected": false, "infra_zone": "I1", "water_demand": 4, "sewer_demand": 3, "power_demand": 6}
   ],
   "infra_zones": [
-    {"infra_zone_id": "I1", "water_capacity": 70, "sewer_capacity": 55, "power_capacity": 110, "road_capacity": 100}
+    {"infra_zone_id": "I1", "water_capacity": 80, "sewer_capacity": 60, "power_capacity": 120, "road_capacity": 100}
+  ],
+  "edges": [
+    ["B1", "B2"], ["B2", "B3"], ["B3", "B4"], ["B4", "B5"], ["B5", "B6"]
   ],
   "targets": {
-    "blocks_by_use": {"housing": 4, "retail": 1, "park": 1, "institutional": 1},
+    "blocks_by_use": {"housing": 3, "retail": 1, "park": 1},
     "required_amenities": ["school", "park"],
     "min_greenery_ratio": 0.15,
     "max_episode_steps": 25
   },
+  "phases": [
+    {
+      "name": "neighbourhood_seed",
+      "objective": "Zone and develop the first 4 blocks: 2 housing, 1 retail, 1 park.",
+      "block_ids": ["B1", "B2", "B3", "B4"],
+      "targets": {
+        "blocks_by_use": {"housing": 2, "retail": 1, "park": 1},
+        "required_amenities": [],
+        "min_greenery_ratio": 0.20
+      }
+    },
+    {
+      "name": "full_neighbourhood",
+      "objective": "Two more blocks revealed. Add 1 housing, site school and park amenities.",
+      "block_ids": ["B5", "B6"],
+      "targets": {
+        "blocks_by_use": {"housing": 3, "retail": 1, "park": 1},
+        "required_amenities": ["school", "park"],
+        "min_greenery_ratio": 0.15
+      }
+    }
+  ],
   "curveball": null
 }

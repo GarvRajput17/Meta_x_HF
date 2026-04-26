@@ -1,85 +1,94 @@
 """Generate SFT training examples from heuristic rollouts.
 
-Runs the greedy heuristic on every task, records each (observation → action)
-step, and formats the result into the standard messages schema used by the
-SFT trainer.  Produces heuristic_rollouts.jsonl alongside this script.
+Runs the updated heuristic (designation-aware, proactive infra upgrade,
+loop-safe fallback) on every phased task, records each (observation → action)
+step in the Meta-RL supply-chain format, and writes heuristic_rollouts.jsonl.
+
+The payload mirrors run_inference.py: simplified block_states + pre-computed
+recommended_action so the model learns to confirm the correct action, not
+reverse-engineer it from a raw observation blob.
+
+Usage:
+    python training/sft/generate_from_heuristic.py
+    python training/sft/generate_from_heuristic.py --tasks tiny_a medium_a
+    python training/sft/generate_from_heuristic.py --out custom_rollouts.jsonl
 """
 
+import argparse
 import json
 import os
 import sys
 from pathlib import Path
 
-# Allow running from repo root without installing the package
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from civicflow_env.tasks import list_task_ids
 from civicflow_env.server.civicflow_env_environment import CivicflowEnvironment
-from civicflow_env.models import CivicflowAction
-from training.baselines.heuristic import plan, replan_after_curveball
 
-SYSTEM_PROMPT = (
-    "You are a municipal planner. Given the current city state, emit exactly one "
-    "structured planning action as JSON. Legal actions are listed in legal_actions_summary. "
-    "Respond with only the JSON object — no explanation, no markdown fences."
-)
+# Re-use the heuristic and payload builder from run_inference.py so the
+# training data exactly matches what the model sees at inference time.
+from training.eval.run_inference import heuristic_action, _build_model_payload, SYSTEM_PROMPT
 
 OUT_PATH = Path(__file__).parent / "heuristic_rollouts.jsonl"
 
+# Only phased tasks — nohint variants are for the no-hint baseline runner
+DEFAULT_TASKS = ["tiny_a", "medium_a", "medium_b", "hard_a"]
 
-def generate():
+
+def generate(task_ids=None, out_path=OUT_PATH):
+    task_ids = task_ids or DEFAULT_TASKS
     examples = []
-    task_ids = list_task_ids()
 
     for task_id in task_ids:
         os.environ["CIVICFLOW_TASK_ID"] = task_id
         env = CivicflowEnvironment()
         obs = env.reset()
-        world = env._world
-        actions = plan(world)
+        action_history = []
+        step = 0
 
-        fires_seen = 0
-        i = 0
-        while i < len(actions) and not env._done:
-            a = actions[i]
-            user_payload = {
-                "task_briefing": obs.briefing,
-                "current_phase": obs.current_phase,
-                "phase_objective": obs.phase_objective,
-                "observation_summary": obs.planning_summary,
-                "active_constraints": obs.active_constraints,
-                "legal_actions_summary": obs.legal_actions_summary,
-            }
-            expert = a.model_dump(exclude_none=True)
-            difficulty = task_id.split("_")[0]
+        while not env._done:
+            # Build the same payload the model sees at inference time
+            payload = _build_model_payload(obs, action_history, env._world)
+
+            # Expert action = heuristic (designation-aware, proactive infra, loop-safe)
+            action = heuristic_action(env._world)
+            expert = action.model_dump(exclude_none=True)
+
             examples.append({
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": json.dumps(user_payload, separators=(",", ":"))},
-                    {"role": "assistant", "content": json.dumps(expert, separators=(",", ":"))},
+                    {"role": "system",    "content": SYSTEM_PROMPT},
+                    {"role": "user",      "content": json.dumps(payload, separators=(",", ":"))},
+                    {"role": "assistant", "content": json.dumps(expert,  separators=(",", ":"))},
                 ],
-                "meta": {"task_id": task_id, "step": i, "difficulty": difficulty},
+                "meta": {
+                    "task_id":   task_id,
+                    "step":      step,
+                    "difficulty": task_id.split("_")[0],
+                },
             })
 
-            obs = env.step(a)
+            obs = env.step(action)
+            action_history.append(expert)
+            step += 1
 
-            # Detect newly-fired curveballs and insert reactive actions
-            fired = sum(1 for f in world.curveballs_fired if f)
-            if fired > fires_seen:
-                fires_seen = fired
-                extra = replan_after_curveball(world)
-                actions = actions[:i + 1] + extra + actions[i + 1:]
-            i += 1
+        valid = obs.last_metrics.get("final_valid_plan", 0)
+        prog  = obs.last_metrics.get("progress_score",  0)
+        print(f"  {task_id}: {step} steps  progress={prog:.3f}  valid={valid}")
 
-        print(f"  {task_id}: {i} steps, valid={env._done}")
-
-    with open(OUT_PATH, "w") as f:
+    with open(out_path, "w") as f:
         for ex in examples:
             f.write(json.dumps(ex) + "\n")
 
-    print(f"\nGenerated {len(examples)} examples from {len(task_ids)} tasks -> {OUT_PATH}")
+    print(f"\nGenerated {len(examples)} examples from {len(task_ids)} tasks → {out_path}")
     return examples
 
 
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--tasks", nargs="+", default=DEFAULT_TASKS)
+    p.add_argument("--out", default=str(OUT_PATH))
+    args = p.parse_args()
+    generate(task_ids=args.tasks, out_path=Path(args.out))
+
+
 if __name__ == "__main__":
-    generate()
+    main()

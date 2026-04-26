@@ -18,6 +18,31 @@ USES = ("housing", "retail", "office", "workshop", "institutional", "park")
 AMENITIES = ("school", "clinic", "grocery", "park", "fire", "transit")
 INFRA_TYPES = ("water", "sewer", "power", "road")
 
+# Future designation types — city masterplan reservations on a block.
+# A designated block has restricted allowed uses; the agent must honor the
+# designation rather than freely develop it.
+FUTURE_DESIGNATIONS = (
+    "transit_corridor",    # earmarked for metro/BRT; only transit amenity or open_space
+    "civic_anchor",        # public institution site; only institutional or school/clinic/fire
+    "entertainment_zone",  # arena/stadium/convention; only institutional, no housing/workshop
+    "green_corridor",      # citywide greenway; park/open_space only
+)
+
+# What uses are allowed on each designation type (empty set = no develop allowed)
+DESIGNATION_ALLOWED_USES: Dict[str, Set[str]] = {
+    "transit_corridor":  set(),                          # no develop; only assign transit or reserve
+    "civic_anchor":      {"institutional"},
+    "entertainment_zone": {"institutional"},
+    "green_corridor":    {"park"},
+}
+# What amenities are allowed on each designation type
+DESIGNATION_ALLOWED_AMENITIES: Dict[str, Set[str]] = {
+    "transit_corridor":  {"transit", "park"},
+    "civic_anchor":      {"school", "clinic", "fire", "park"},
+    "entertainment_zone": {"park"},
+    "green_corridor":    {"park"},
+}
+
 # Which uses are allowed in which zones.
 ZONE_USE_COMPAT: Dict[str, Set[str]] = {
     "residential": {"housing"},
@@ -29,6 +54,28 @@ ZONE_USE_COMPAT: Dict[str, Set[str]] = {
     # "unzoned": nothing buildable
 }
 
+# Default construction costs per action type (monetary units).
+# Tasks can override via city_resources.action_costs.
+DEFAULT_ACTION_COSTS: Dict[str, float] = {
+    "set_zoning": 2_000,
+    "develop": 30_000,
+    "assign_amenity": 20_000,
+    "reserve_open_space": 5_000,
+    "upgrade_infrastructure": 15_000,
+    "redevelop": 25_000,
+    "defer": 0,
+}
+
+
+@dataclass
+class CityResources:
+    """City-wide resource pools that cap total consumption across all infra zones."""
+    water_supply: float = 0.0       # 0 = uncapped
+    power_grid: float = 0.0         # 0 = uncapped
+    sewer_network: float = 0.0      # 0 = uncapped
+    construction_budget: float = 0.0  # 0 = uncapped
+    action_costs: Dict[str, float] = field(default_factory=dict)
+
 
 @dataclass
 class Block:
@@ -36,11 +83,13 @@ class Block:
     district: str
     has_road_access: bool
     is_protected: bool
-    is_floodrisk: bool
     infra_zone: str
     water_demand: float
     sewer_demand: float
     power_demand: float
+    road_demand: float = 0.0
+    population_capacity: int = 0    # residents when developed as housing
+    future_designation: Optional[str] = None  # masterplan reservation (see FUTURE_DESIGNATIONS)
 
     # Mutable fields set by actions:
     zone: str = "unzoned"
@@ -74,17 +123,22 @@ class Targets:
     min_greenery_ratio: float
     max_episode_steps: int
     district_targets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    # Optional graph-distance requirements, e.g. {"school": 1, "clinic": 2}
+    # means every housing block should be within that many hops of the amenity.
+    service_radius: Dict[str, int] = field(default_factory=dict)
+    max_population: int = 0         # 0 = uncapped
 
 
 @dataclass
 class CurveballSpec:
     fire_at_step: int
     description: str
-    mutation: str          # "protect" | "floodrisk" | "capacity_cut" | "target_override"
+    mutation: str          # "protect" | "designate" | "capacity_cut" | "target_override"
     gold_affected: List[str]
     block_ids: List[str] = field(default_factory=list)
     infra_zone: Optional[str] = None
     infra_type: Optional[str] = None
+    designation_type: Optional[str] = None  # for "designate" mutation
     capacity_delta: float = 0.0
     target_overrides: Dict[str, Any] = field(default_factory=dict)
 
@@ -100,6 +154,9 @@ class WorldState:
     blocks: Dict[str, Block]
     infra_zones: Dict[str, InfraZone]
     targets: Targets
+    adjacency: Dict[str, List[str]] = field(default_factory=dict)
+    city_resources: CityResources = field(default_factory=CityResources)
+    external_ledgers: Dict[str, Any] = field(default_factory=dict)
     curveballs: List[CurveballSpec] = field(default_factory=list)
     planning_phases: List[Dict[str, str]] = field(default_factory=list)
 
@@ -109,6 +166,12 @@ class WorldState:
     first_fire_step: Optional[int] = None
     blocks_touched_after_curveball: Set[str] = field(default_factory=set)
     action_history: List[dict] = field(default_factory=list)
+
+    # Phased block revelation (populated by tasks.py when task has "phases"):
+    phase_idx: int = 0
+    pending_phases: List[Dict] = field(default_factory=list)
+    _hidden_blocks: Dict[str, Any] = field(default_factory=dict)
+    _all_edges: List[List[str]] = field(default_factory=list)
 
     # Backward-compat shim so existing references to `state.curveball` (singular)
     # still resolve to the first curveball, and `curveball_fired` to its flag.

@@ -1,0 +1,167 @@
+{
+  "task_id": "medium_b",
+  "briefing": "Medium-B (phased): 25 blocks across 3 districts revealed in 3 phases. North (I1, B1-B8) first: B5 is a protected civic anchor, B7 is a green corridor (park only), B8 is an entertainment zone (institutional/park only). Central (I2, B9-B17) revealed on phase 1 completion: B14 is a transit corridor, B16 is a green corridor. South (I3, B18-B25) revealed last: B22 has no road access (green corridor), B23 and B25 are protected. District equity, service coverage, and budget all enforced from the start — no surprise shocks. set_zoning before develop.",
+  "blocks": [
+    {"block_id": "B1",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 300},
+    {"block_id": "B2",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 180},
+    {"block_id": "B3",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 180},
+    {"block_id": "B4",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 6,  "sewer_demand": 4, "power_demand": 10, "road_demand": 2.1, "population_capacity": 300},
+    {"block_id": "B5",  "has_road_access": true,  "is_protected": true,  "infra_zone": "I1", "water_demand": 4,  "sewer_demand": 3, "power_demand": 6,  "road_demand": 1.4, "population_capacity": 0,   "future_designation": "civic_anchor"},
+    {"block_id": "B6",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 10, "sewer_demand": 8, "power_demand": 16, "road_demand": 3.5, "population_capacity": 220},
+    {"block_id": "B7",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 0,   "future_designation": "green_corridor"},
+    {"block_id": "B8",  "has_road_access": true,  "is_protected": false, "infra_zone": "I1", "water_demand": 6,  "sewer_demand": 4, "power_demand": 10, "road_demand": 2.1, "population_capacity": 0,   "future_designation": "entertainment_zone"},
+    {"block_id": "B9",  "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 200},
+    {"block_id": "B10", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 300},
+    {"block_id": "B11", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 180},
+    {"block_id": "B12", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 6,  "sewer_demand": 4, "power_demand": 10, "road_demand": 2.1, "population_capacity": 300},
+    {"block_id": "B13", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 10, "sewer_demand": 8, "power_demand": 16, "road_demand": 3.5, "population_capacity": 300},
+    {"block_id": "B14", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 5,  "sewer_demand": 4, "power_demand": 8,  "road_demand": 1.8, "population_capacity": 0,   "future_designation": "transit_corridor"},
+    {"block_id": "B15", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 280},
+    {"block_id": "B16", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 6,  "sewer_demand": 4, "power_demand": 10, "road_demand": 2.1, "population_capacity": 0,   "future_designation": "green_corridor"},
+    {"block_id": "B17", "has_road_access": true,  "is_protected": false, "infra_zone": "I2", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 280},
+    {"block_id": "B18", "has_road_access": true,  "is_protected": false, "infra_zone": "I3", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 250},
+    {"block_id": "B19", "has_road_access": true,  "is_protected": false, "infra_zone": "I3", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 180},
+    {"block_id": "B20", "has_road_access": true,  "is_protected": false, "infra_zone": "I3", "water_demand": 6,  "sewer_demand": 4, "power_demand": 10, "road_demand": 2.1, "population_capacity": 180},
+    {"block_id": "B21", "has_road_access": true,  "is_protected": false, "infra_zone": "I3", "water_demand": 10, "sewer_demand": 8, "power_demand": 16, "road_demand": 3.5, "population_capacity": 180},
+    {"block_id": "B22", "has_road_access": false, "is_protected": false, "infra_zone": "I3", "water_demand": 5,  "sewer_demand": 4, "power_demand": 8,  "road_demand": 1.8, "population_capacity": 0,   "future_designation": "green_corridor"},
+    {"block_id": "B23", "has_road_access": true,  "is_protected": true,  "infra_zone": "I3", "water_demand": 8,  "sewer_demand": 6, "power_demand": 12, "road_demand": 2.8, "population_capacity": 0},
+    {"block_id": "B24", "has_road_access": true,  "is_protected": false, "infra_zone": "I3", "water_demand": 6,  "sewer_demand": 4, "power_demand": 10, "road_demand": 2.1, "population_capacity": 200},
+    {"block_id": "B25", "has_road_access": true,  "is_protected": true,  "infra_zone": "I3", "water_demand": 4,  "sewer_demand": 3, "power_demand": 6,  "road_demand": 1.4, "population_capacity": 0}
+  ],
+  "infra_zones": [
+    {"infra_zone_id": "I1", "water_capacity": 70, "sewer_capacity": 55, "power_capacity": 110, "road_capacity": 100},
+    {"infra_zone_id": "I2", "water_capacity": 70, "sewer_capacity": 35, "power_capacity": 110, "road_capacity": 100},
+    {"infra_zone_id": "I3", "water_capacity": 60, "sewer_capacity": 45, "power_capacity": 95,  "road_capacity": 90}
+  ],
+  "edges": [
+    ["B1","B2"],["B2","B3"],["B3","B4"],["B4","B5"],["B4","B6"],
+    ["B2","B6"],["B6","B7"],["B7","B8"],["B8","B9"],["B9","B10"],
+    ["B10","B11"],["B11","B12"],["B12","B13"],["B11","B15"],
+    ["B13","B14"],["B15","B16"],["B16","B17"],["B17","B18"],
+    ["B18","B19"],["B19","B20"],["B20","B21"],["B20","B22"],
+    ["B21","B23"],["B23","B24"],["B24","B25"]
+  ],
+  "targets": {
+    "blocks_by_use": {"housing": 8, "retail": 3, "office": 2, "workshop": 1, "institutional": 2, "park": 2},
+    "required_amenities": ["school", "clinic", "grocery", "fire", "transit", "park"],
+    "min_greenery_ratio": 0.26,
+    "max_episode_steps": 90,
+    "max_population": 2200,
+    "service_radius": {"school": 3, "clinic": 3, "grocery": 2, "fire": 4, "transit": 2, "park": 2},
+    "district_targets": {
+      "I1": {
+        "required_amenities": ["park", "transit", "grocery", "clinic"],
+        "min_greenery_ratio": 0.22,
+        "min_economic_ratio": 0.28,
+        "required_uses": {"housing": 2, "retail": 1}
+      },
+      "I2": {
+        "required_amenities": ["school", "clinic", "grocery", "transit"],
+        "min_greenery_ratio": 0.18,
+        "min_economic_ratio": 0.32,
+        "required_uses": {"housing": 3, "institutional": 1, "office": 1}
+      },
+      "I3": {
+        "required_amenities": ["fire", "park", "grocery", "clinic", "transit"],
+        "min_greenery_ratio": 0.27,
+        "min_economic_ratio": 0.22,
+        "required_uses": {"housing": 2, "institutional": 1}
+      }
+    }
+  },
+  "phases": [
+    {
+      "name": "north_district",
+      "objective": "Build North (I1, B1-B8): 2 housing, 1 retail, 1 park; site park+transit+grocery+clinic. B5 is a protected civic anchor (park/clinic/school only). B7 is green corridor (park only). B8 is entertainment zone (institutional/park only). I2 sewer is already tight (35) — plan carefully.",
+      "block_ids": ["B1","B2","B3","B4","B5","B6","B7","B8"],
+      "targets": {
+        "blocks_by_use": {"housing": 2, "retail": 1, "park": 1},
+        "required_amenities": ["park", "transit", "grocery", "clinic"],
+        "min_greenery_ratio": 0.25,
+        "district_targets": {
+          "I1": {
+            "required_amenities": ["park", "transit", "grocery", "clinic"],
+            "min_greenery_ratio": 0.22,
+            "min_economic_ratio": 0.28,
+            "required_uses": {"housing": 2, "retail": 1}
+          }
+        }
+      }
+    },
+    {
+      "name": "central_district",
+      "objective": "Central (I2, B9-B17) revealed. B14 is transit corridor (transit/park only), B16 is green corridor (park only). Grow to 5 housing, 2 retail, 1 office, 1 institutional; add school. I2 sewer capacity is only 35 — high-demand blocks will require careful infra management.",
+      "block_ids": ["B9","B10","B11","B12","B13","B14","B15","B16","B17"],
+      "targets": {
+        "blocks_by_use": {"housing": 5, "retail": 2, "office": 1, "institutional": 1, "park": 2},
+        "required_amenities": ["school", "clinic", "grocery", "transit", "park"],
+        "min_greenery_ratio": 0.24,
+        "service_radius": {"school": 3, "clinic": 3, "grocery": 2, "transit": 2, "park": 2},
+        "district_targets": {
+          "I1": {
+            "required_amenities": ["park", "transit", "grocery", "clinic"],
+            "min_greenery_ratio": 0.22,
+            "min_economic_ratio": 0.28,
+            "required_uses": {"housing": 2, "retail": 1}
+          },
+          "I2": {
+            "required_amenities": ["school", "clinic", "grocery", "transit"],
+            "min_greenery_ratio": 0.18,
+            "min_economic_ratio": 0.32,
+            "required_uses": {"housing": 3, "institutional": 1, "office": 1}
+          }
+        }
+      }
+    },
+    {
+      "name": "south_district",
+      "objective": "South (I3, B18-B25) revealed. B22 has no road access (green corridor), B23 and B25 are protected open space. Complete all district targets; meet greenery ratio 0.26, population cap 2200, and spatial service coverage.",
+      "block_ids": ["B18","B19","B20","B21","B22","B23","B24","B25"],
+      "targets": {
+        "blocks_by_use": {"housing": 8, "retail": 3, "office": 2, "workshop": 1, "institutional": 2, "park": 2},
+        "required_amenities": ["school", "clinic", "grocery", "fire", "transit", "park"],
+        "min_greenery_ratio": 0.26,
+        "max_population": 2200,
+        "service_radius": {"school": 3, "clinic": 3, "grocery": 2, "fire": 4, "transit": 2, "park": 2},
+        "district_targets": {
+          "I1": {
+            "required_amenities": ["park", "transit", "grocery", "clinic"],
+            "min_greenery_ratio": 0.22,
+            "min_economic_ratio": 0.28,
+            "required_uses": {"housing": 2, "retail": 1}
+          },
+          "I2": {
+            "required_amenities": ["school", "clinic", "grocery", "transit"],
+            "min_greenery_ratio": 0.18,
+            "min_economic_ratio": 0.32,
+            "required_uses": {"housing": 3, "institutional": 1, "office": 1}
+          },
+          "I3": {
+            "required_amenities": ["fire", "park", "grocery", "clinic", "transit"],
+            "min_greenery_ratio": 0.27,
+            "min_economic_ratio": 0.22,
+            "required_uses": {"housing": 2, "institutional": 1}
+          }
+        }
+      }
+    }
+  ],
+  "city_resources": {
+    "water_supply": 190.0,
+    "power_grid": 300.0,
+    "sewer_network": 135.0,
+    "construction_budget": 750000.0,
+    "action_costs": {
+      "set_zoning": 2000,
+      "develop": 30000,
+      "assign_amenity": 20000,
+      "reserve_open_space": 5000,
+      "upgrade_infrastructure": 15000,
+      "redevelop": 25000,
+      "defer": 0
+    }
+  },
+  "external_ledgers": {
+    "initial_budget": 750000.0
+  }
+}
