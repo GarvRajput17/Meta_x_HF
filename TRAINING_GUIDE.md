@@ -38,10 +38,10 @@ civicflow_env/
 
 training/
 ├── sft/
-│   ├── heuristic_rollouts.jsonl     # 307 expert steps (primary SFT data)
-│   ├── sft_final.jsonl              # merged training set (307 heuristic + 25 syndata)
-│   ├── generate_from_heuristic.py   # re-generates heuristic_rollouts.jsonl
-│   ├── prepare_sft_data.py          # merges multiple sources → sft_final.jsonl
+│   ├── sft_final.txt                # primary SFT corpus: NL state + JSON action (from heuristic)
+│   ├── heuristic_rollouts.jsonl     # legacy chat-JSONL format (optional)
+│   ├── generate_from_heuristic.py   # builds sft_final.txt (+ optional JSONL via --out-jsonl)
+│   ├── prepare_sft_data.py          # merges syndata*.json → JSONL/JSON (separate from heuristic txt)
 │   └── civicflow_sft_colab.ipynb    # Colab SFT notebook (Unsloth / TRL SFTTrainer)
 ├── rl/
 │   └── civicflow_grpo_colab.ipynb   # Colab GRPO notebook (TRL GRPOTrainer)
@@ -59,18 +59,28 @@ models/
 ## Step 1 — Regenerate SFT Data (if tasks changed)
 
 ```bash
-# Re-run heuristic on all phased tasks and rebuild sft_final.jsonl
-python training/sft/generate_from_heuristic.py
+# Expert trajectories from training/baselines/heuristic.py → plain-text SFT file
+python training/sft/generate_from_heuristic.py \
+  --out-txt training/sft/sft_final.txt
 
-# Optionally merge with additional syndata sources
+# All task fixtures, deduped rows (recommended)
+python training/sft/generate_from_heuristic.py --all-tasks \
+  --out-txt training/sft/sft_final.txt
+
+# Optional: also emit chat JSONL for trainers that require .jsonl
+python training/sft/generate_from_heuristic.py \
+  --out-txt training/sft/sft_final.txt \
+  --out-jsonl training/sft/sft_heuristic.jsonl
+
+# Separate pipeline: merge syndata*.json → JSONL (does not replace sft_final.txt)
 python training/sft/prepare_sft_data.py \
-    --in training/sft/heuristic_rollouts.jsonl \
-    --out-jsonl training/sft/sft_final.jsonl \
-    --out-json  training/sft/sft_final.json \
+    --in syndata.json \
+    --out-jsonl training/sft/sft_merged_clean.jsonl \
+    --out-json  training/sft/sft_merged_clean.json \
     --report    training/sft/sft_merge_report.json
 ```
 
-Current dataset: **332 examples** across 4 tasks (tiny_a×12, medium_a×15, medium_b×90, hard_a×190, syndata×25).
+The heuristic text file is split into examples by `---` between records. Each record has `### STATE`, `### TASK`, and `### ACTION` (assistant = one JSON action). Row count scales with `--all-tasks` and is **deduped by default** (same task/step/action is not repeated across `--repeat` runs).
 
 ---
 
@@ -78,10 +88,40 @@ Current dataset: **332 examples** across 4 tasks (tiny_a×12, medium_a×15, medi
 
 Use `training/sft/civicflow_sft_colab.ipynb` (Unsloth on Colab A100/T4).
 
+**Data file:** `training/sft/sft_final.txt` (not JSONL). Parse each `---`-separated block into chat messages before `SFTTrainer`:
+
+```python
+from pathlib import Path
+
+def load_sft_txt(path: str) -> list[dict]:
+    system = (
+        "You are a CivicFlow city planner. Read the state and reply with one JSON object only: "
+        "the next action. No markdown, no explanation."
+    )
+    rows = []
+    for chunk in Path(path).read_text(encoding="utf-8").split("\n---\n"):
+        chunk = chunk.strip()
+        if "### ACTION" not in chunk:
+            continue
+        head, _, action = chunk.partition("### ACTION")
+        rows.append({
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": head.strip()},
+                {"role": "assistant", "content": action.strip()},
+            ]
+        })
+    return rows
+
+dataset = load_sft_txt("training/sft/sft_final.txt")
+```
+
+The `.txt` file does not store the system prompt per row (only state / task / action). Use a single `system` string as above, or generate `sft_heuristic.jsonl` with `--out-jsonl` if you need the exact rotating system prompts from `generate_from_heuristic.py`.
+
 Key settings:
 ```python
 model_id   = "Qwen/Qwen2.5-3B-Instruct"   # or 7B if VRAM allows
-data_path  = "training/sft/sft_final.jsonl"
+# Use `dataset` from load_sft_txt above (or Dataset.from_list(dataset))
 output_dir = "./models/civicflow-sft"
 
 # Recommended hyperparameters
@@ -93,11 +133,12 @@ max_seq_length              = 2048
 lora_r, lora_alpha          = 16, 32
 ```
 
-The training format is standard chat-template messages:
+Equivalent logical format (what the tokenizer sees after parsing txt):
+
 ```json
 {"messages": [
-  {"role": "system",    "content": "You are a city planner. Output ONLY the JSON shown in recommended_action..."},
-  {"role": "user",      "content": "{\"block_states\": [...], \"recommended_action\": {...}, ...}"},
+  {"role": "system",    "content": "<planner system prompt>"},
+  {"role": "user",      "content": "<### STATE + task instructions in natural language>"},
   {"role": "assistant", "content": "{\"action_type\": \"develop\", \"block_id\": \"B1\", \"use\": \"housing\"}"}
 ]}
 ```
