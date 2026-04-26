@@ -466,52 +466,5 @@
         "bad_alternative_notes": "assign_amenity clinic on B9 directly would be REJECTED ('block already has amenity fire'). redevelop with use=null on a non-protected/non-flood block would also be REJECTED. Building a fresh civic block elsewhere would waste land and infra."
       }
     }
-  ],
-
-  "source_to_constraint_mapping": [
-    {
-      "source_name": "UN-Habitat (5 Principles)",
-      "planning_principles": "High density, mixed land use, adequate street space, compact urban form.",
-      "inspired_civicflow_constraints": "TOD concentrate-density constraint; mixed-use zoning allowed; district_targets.min_economic_ratio prevents residential monofunction.",
-      "status_labels": "TOD constraint: SUPPORTED_NOW via zone choices and district_targets; economic_use_ratio: SUPPORTED_NOW via district_mix_gap_count + land_use_balance_score."
-    },
-    {
-      "source_name": "WHO Urban Green Spaces",
-      "planning_principles": "Universal proximity to green space (<=300 m); minimum per-capita green area.",
-      "inspired_civicflow_constraints": "min_greenery_ratio hard target; greenery_shortfall metric; open_space zone and park use required for balance; per-district min_greenery_ratio in district_targets.",
-      "status_labels": "min_greenery and greenery_ratio: SUPPORTED_NOW; per-district greenery floor: SUPPORTED_NOW; per-block proximity score for parks: SAFE_EXTENSION."
-    },
-    {
-      "source_name": "OECD Cities for All Ages",
-      "planning_principles": "Walkability, accessible healthcare and daily services for ageing populations, adaptable infrastructure.",
-      "inspired_civicflow_constraints": "district_service_gap_count enforces clinic / grocery / school coverage at the district level; replanning curveballs (fire -> clinic swap) test adaptability.",
-      "status_labels": "Clinic and grocery amenities: SUPPORTED_NOW; district_service_gap_count + accessibility_score: SUPPORTED_NOW; per-block walking-radius coverage: SAFE_EXTENSION."
-    },
-    {
-      "source_name": "ITDP TOD Standard",
-      "planning_principles": "Maximise density within walking distance of high-capacity transit; prioritise non-motorised access; avoid auto-centric design.",
-      "inspired_civicflow_constraints": "transit amenity siting via assign_amenity(transit, ...); 'tod_concentrate_density' constraint used in medium samples; per-block transit_access score is a safe extension.",
-      "status_labels": "transit amenity: SUPPORTED_NOW; transit_access proximity score: SAFE_EXTENSION; TOD zoning pattern: SUPPORTED_NOW by example construction."
-    }
-  ],
-
-  "hackathon_scope_recommendation": {
-    "minimum_trajectory_count": 15,
-    "minimum_step_examples": 100,
-    "tiny_medium_hard_mix": "60% tiny, 40% medium; drop hard from SFT (use it only as held-out evaluation).",
-    "recommended_safe_extensions_now": [
-      "transit_access (per-block proximity score derived from assign_amenity(transit) placements)",
-      "per-block service_coverage proximity (graph traversal from residential blocks; complements district_service_gap_count)"
-    ],
-    "now_unblocked_by_recent_env_changes": [
-      "current_phase / phase_objective fields are already in the observation",
-      "district_service_gap_count, district_mix_gap_count, district_green_gap_count are already in last_metrics",
-      "land_use_balance_score and accessibility_score already feed reward components"
-    ],
-    "defer_future_only": [
-      "budget_remaining (no cost accounting in current verifier)",
-      "noise_pollution (needs adjacency penalty logic)"
-    ],
-    "notes": "Hard trajectories are too complex to hand-author and often introduce noise; all SFT examples must pass deterministic verification. The corrected examples cover the critical skills: schema-correct formatting, phase-awareness, selective replanning under heritage/flood/capacity-cut curveballs, amenity co-location, and constraint adherence. Scaling to 100 step-examples is done by unrolling the 15 trajectories with the same fidelity and inserting intermediate observations between each turn."
-  }
+  ]
 }
