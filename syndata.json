@@ -7,7 +7,6 @@
     "upgrade_infrastructure operates on (infra_zone, infra_type, capacity), not (block_id, type). The 'transit corridor' example was reframed: transit is an amenity, not an infra type.",
     "Status labels in new_field_mechanic_proposals were re-aligned with the current verifier surface (district_service_gap_count, district_mix_gap_count, accessibility_score, current_phase, phase_objective)."
   ],
-
   "corrected_sft_design_principles": [
     {
       "id": "strict_action_alignment",
@@ -34,7 +33,6 @@
       "description": "Every action sequence must pass deterministic verification: (1) all actions parse against the CivicFlow grammar, (2) each action is legal in the given state and phase, (3) combined actions make progress toward the phase objective, (4) after a curveball only invalidated elements are modified."
     }
   ],
-
   "civicflow_example_schema": {
     "system_prompt": "You are the AI City Planner for CivicFlow. You receive phase-based environment observations. Output structured JSON actions to update the district plan.",
     "task_briefing": "string, overall district goal",
@@ -49,7 +47,6 @@
           "use": "housing | retail | office | workshop | institutional | park | null",
           "amenity": "school | clinic | grocery | park | fire | transit | null",
           "is_protected": false,
-          "is_floodrisk": false,
           "has_road_access": true,
           "infra_zone": "I1",
           "phase": 0
@@ -57,12 +54,46 @@
       ],
       "district_stats": {
         "greenery_ratio": 0.15,
-        "amenity_coverage": {"school": 0, "clinic": 0, "grocery": 0, "park": 0, "fire": 0, "transit": 0},
-        "blocks_by_use": {"housing": 0, "retail": 0, "office": 0, "workshop": 0, "institutional": 0, "park": 0, "undeveloped": 9},
-        "infra_zones": {"I1": {"water": [0, 70], "sewer": [0, 55], "power": [0, 110]}}
+        "amenity_coverage": {
+          "school": 0,
+          "clinic": 0,
+          "grocery": 0,
+          "park": 0,
+          "fire": 0,
+          "transit": 0
+        },
+        "blocks_by_use": {
+          "housing": 0,
+          "retail": 0,
+          "office": 0,
+          "workshop": 0,
+          "institutional": 0,
+          "park": 0,
+          "undeveloped": 9
+        },
+        "infra_zones": {
+          "I1": {
+            "water": [
+              0,
+              70
+            ],
+            "sewer": [
+              0,
+              55
+            ],
+            "power": [
+              0,
+              110
+            ]
+          }
+        }
       }
     },
-    "active_constraints": ["min_greenery_22%", "district_service_coverage", "infra_capacity"],
+    "active_constraints": [
+      "min_greenery_22%",
+      "district_service_coverage",
+      "infra_capacity"
+    ],
     "legal_actions_summary": [
       "set_zoning(block_id, zone)",
       "develop(block_id, use)",
@@ -75,7 +106,11 @@
     "expert_response": {
       "rationale": "string, step-by-step reasoning referencing spatial relations and constraints",
       "actions": [
-        {"action_type": "set_zoning", "block_id": "B1", "zone": "residential"}
+        {
+          "action_type": "set_zoning",
+          "block_id": "B1",
+          "zone": "residential"
+        }
       ]
     },
     "annotation": {
@@ -83,11 +118,10 @@
       "bad_alternative_notes": "string, common failure modes"
     }
   },
-
   "new_field_mechanic_proposals": [
     {
       "name": "heritage",
-      "description": "Boolean flag per block indicating a protected heritage site. Severely restricts allowable zone types — only open_space is permitted, and only the 'park' amenity may be assigned.",
+      "description": "Boolean flag per block indicating a protected heritage site. Severely restricts allowable zone types \u2014 only open_space is permitted, and only the 'park' amenity may be assigned.",
       "status": "SUPPORTED_NOW",
       "deterministic_verification": "Verifier checks that on blocks with is_protected=true, set_zoning only accepts 'open_space' and assign_amenity only accepts 'park'. develop is rejected outright.",
       "used_for": "BOTH"
@@ -135,7 +169,6 @@
       "used_for": "RL"
     }
   ],
-
   "corrected_example_set": [
     {
       "dialogue_id": "traj_tiny_std_001",
@@ -148,22 +181,65 @@
       "phase_objective": "Establish at least one residential block and ensure greenery_ratio >= 0.20.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.0,
-          "amenity_coverage": {"school": 0, "clinic": 0, "grocery": 0, "park": 0, "fire": 0, "transit": 0},
-          "blocks_by_use": {"undeveloped": 2}
+          "amenity_coverage": {
+            "school": 0,
+            "clinic": 0,
+            "grocery": 0,
+            "park": 0,
+            "fire": 0,
+            "transit": 0
+          },
+          "blocks_by_use": {
+            "undeveloped": 2
+          }
         }
       },
-      "active_constraints": ["min_greenery_20", "require_1_residential"],
-      "legal_actions_summary": ["set_zoning(block_id, zone)", "reserve_open_space(block_id)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "min_greenery_20",
+        "require_1_residential"
+      ],
+      "legal_actions_summary": [
+        "set_zoning(block_id, zone)",
+        "reserve_open_space(block_id)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "Two simple moves cover both objectives: zone B1 residential to satisfy the housing requirement, and reserve B2 as open_space to push greenery_ratio to 0.50 — well above the 0.20 floor.",
+        "rationale": "Two simple moves cover both objectives: zone B1 residential to satisfy the housing requirement, and reserve B2 as open_space to push greenery_ratio to 0.50 \u2014 well above the 0.20 floor.",
         "actions": [
-          {"action_type": "set_zoning", "block_id": "B1", "zone": "residential"},
-          {"action_type": "reserve_open_space", "block_id": "B2"}
+          {
+            "action_type": "set_zoning",
+            "block_id": "B1",
+            "zone": "residential"
+          },
+          {
+            "action_type": "reserve_open_space",
+            "block_id": "B2"
+          }
         ]
       },
       "annotation": {
@@ -182,23 +258,80 @@
       "phase_objective": "Site a grocery amenity within walking distance of the residential cluster without disturbing the green space.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "residential", "use": "housing", "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "open_space", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B3", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "residential",
+            "use": "housing",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "open_space",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B3",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.33,
-          "amenity_coverage": {"school": 0, "clinic": 0, "grocery": 0, "park": 0, "fire": 0, "transit": 0},
-          "blocks_by_use": {"housing": 1, "undeveloped": 2}
+          "amenity_coverage": {
+            "school": 0,
+            "clinic": 0,
+            "grocery": 0,
+            "park": 0,
+            "fire": 0,
+            "transit": 0
+          },
+          "blocks_by_use": {
+            "housing": 1,
+            "undeveloped": 2
+          }
         }
       },
-      "active_constraints": ["min_grocery_coverage", "preserve_greenery", "amenity_zone_compat"],
-      "legal_actions_summary": ["set_zoning(block_id, zone)", "develop(block_id, use)", "assign_amenity(block_id, amenity_type)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "min_grocery_coverage",
+        "preserve_greenery",
+        "amenity_zone_compat"
+      ],
+      "legal_actions_summary": [
+        "set_zoning(block_id, zone)",
+        "develop(block_id, use)",
+        "assign_amenity(block_id, amenity_type)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "B2 is the green buffer and must stay untouched. B1 is residential and cannot host a grocery amenity (verifier requires civic/mixed/commercial). I zone B3 commercial and assign a grocery amenity to it — assign_amenity on an undeveloped commercial block develops it as institutional with the grocery amenity stamp, giving walking-distance coverage to the housing on B1.",
+        "rationale": "B2 is the green buffer and must stay untouched. B1 is residential and cannot host a grocery amenity (verifier requires civic/mixed/commercial). I zone B3 commercial and assign a grocery amenity to it \u2014 assign_amenity on an undeveloped commercial block develops it as institutional with the grocery amenity stamp, giving walking-distance coverage to the housing on B1.",
         "actions": [
-          {"action_type": "set_zoning", "block_id": "B3", "zone": "commercial"},
-          {"action_type": "assign_amenity", "block_id": "B3", "amenity_type": "grocery"}
+          {
+            "action_type": "set_zoning",
+            "block_id": "B3",
+            "zone": "commercial"
+          },
+          {
+            "action_type": "assign_amenity",
+            "block_id": "B3",
+            "amenity_type": "grocery"
+          }
         ]
       },
       "annotation": {
@@ -217,31 +350,111 @@
       "phase_objective": "Achieve transit amenity coverage on at least 3 of 5 blocks; transit may be co-located on commercial blocks under the verifier's commercial-amenity rule.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "commercial", "use": "retail", "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "commercial", "use": "retail", "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B3", "district": "I1", "zone": "commercial", "use": "office", "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B4", "district": "I1", "zone": "commercial", "use": "retail", "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B5", "district": "I1", "zone": "commercial", "use": "office", "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "retail",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "retail",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B3",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "office",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B4",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "retail",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B5",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "office",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.0,
-          "amenity_coverage": {"school": 0, "clinic": 0, "grocery": 0, "park": 0, "fire": 0, "transit": 0},
-          "blocks_by_use": {"retail": 3, "office": 2}
+          "amenity_coverage": {
+            "school": 0,
+            "clinic": 0,
+            "grocery": 0,
+            "park": 0,
+            "fire": 0,
+            "transit": 0
+          },
+          "blocks_by_use": {
+            "retail": 3,
+            "office": 2
+          }
         }
       },
-      "active_constraints": ["min_transit_coverage_60", "amenity_zone_compat", "no_double_amenity"],
-      "legal_actions_summary": ["assign_amenity(block_id, amenity_type)", "upgrade_infrastructure(infra_zone, infra_type, capacity)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "min_transit_coverage_60",
+        "amenity_zone_compat",
+        "no_double_amenity"
+      ],
+      "legal_actions_summary": [
+        "assign_amenity(block_id, amenity_type)",
+        "upgrade_infrastructure(infra_zone, infra_type, capacity)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "Transit is an amenity, not an infrastructure type — assign_amenity is the right verb. Spaced placement maximises walking radius: I co-locate transit on B1, B3, B5 (every other block). The verifier allows transit on commercial blocks and, since each is already developed (retail/office), it stamps the amenity without changing the use.",
+        "rationale": "Transit is an amenity, not an infrastructure type \u2014 assign_amenity is the right verb. Spaced placement maximises walking radius: I co-locate transit on B1, B3, B5 (every other block). The verifier allows transit on commercial blocks and, since each is already developed (retail/office), it stamps the amenity without changing the use.",
         "actions": [
-          {"action_type": "assign_amenity", "block_id": "B1", "amenity_type": "transit"},
-          {"action_type": "assign_amenity", "block_id": "B3", "amenity_type": "transit"},
-          {"action_type": "assign_amenity", "block_id": "B5", "amenity_type": "transit"}
+          {
+            "action_type": "assign_amenity",
+            "block_id": "B1",
+            "amenity_type": "transit"
+          },
+          {
+            "action_type": "assign_amenity",
+            "block_id": "B3",
+            "amenity_type": "transit"
+          },
+          {
+            "action_type": "assign_amenity",
+            "block_id": "B5",
+            "amenity_type": "transit"
+          }
         ]
       },
       "annotation": {
         "why_this_is_good": "Uses the correct verb for siting a transit stop (assign_amenity, not upgrade_infrastructure), respects amenity-zone compatibility, and achieves the 60% target with the minimum number of co-located stamps.",
-        "bad_alternative_notes": "upgrade_infrastructure on a block id with type='transit' would be REJECTED — upgrade_infrastructure only accepts (infra_zone, infra_type, capacity) and infra_type must be water/sewer/power/road. Assigning transit to all five blocks would saturate amenity slots and waste the no_double_amenity budget."
+        "bad_alternative_notes": "upgrade_infrastructure on a block id with type='transit' would be REJECTED \u2014 upgrade_infrastructure only accepts (infra_zone, infra_type, capacity) and infra_type must be water/sewer/power/road. Assigning transit to all five blocks would saturate amenity slots and waste the no_double_amenity budget."
       }
     },
     {
@@ -255,26 +468,63 @@
       "phase_objective": "Clear any developed block that became flood-risk; preserve greenery >= 0.20; touch only the affected block.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "residential", "use": "housing", "amenity": null, "is_protected": false, "is_floodrisk": true,  "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "open_space",  "use": "park",    "amenity": "park", "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "residential",
+            "use": "housing",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "open_space",
+            "use": "park",
+            "amenity": "park",
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.5,
-          "amenity_coverage": {"park": 1},
-          "blocks_by_use": {"housing": 1, "park": 1}
+          "amenity_coverage": {
+            "park": 1
+          },
+          "blocks_by_use": {
+            "housing": 1,
+            "park": 1
+          }
         }
       },
-      "active_constraints": ["flood_moratorium_enacted", "min_greenery_20", "selective_replanning"],
-      "legal_actions_summary": ["redevelop(block_id, use)", "reserve_open_space(block_id)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "flood_moratorium_enacted",
+        "min_greenery_20",
+        "selective_replanning"
+      ],
+      "legal_actions_summary": [
+        "redevelop(block_id, use)",
+        "reserve_open_space(block_id)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "B1 became flood-risk after development — that is now an active constraint violation. The verifier's redevelop action accepts use=null on a flood-risk or protected block: it frees the infra allocation, sets zone=open_space and reserved_open_space=True in one shot. B2 is unaffected and must stay untouched to keep affected_set_precision high.",
+        "rationale": "B1 became flood-risk after development \u2014 that is now an active constraint violation. The verifier's redevelop action accepts use=null on a flood-risk or protected block: it frees the infra allocation, sets zone=open_space and reserved_open_space=True in one shot. B2 is unaffected and must stay untouched to keep affected_set_precision high.",
         "actions": [
-          {"action_type": "redevelop", "block_id": "B1", "use": null}
+          {
+            "action_type": "redevelop",
+            "block_id": "B1",
+            "use": null
+          }
         ]
       },
       "annotation": {
-        "why_this_is_good": "Selectively fixes the single invalid block with the minimum-cost legal verb. The flood-risk shortcut means one action both clears the use and converts the block to a flood-compatible green buffer — greenery rises to 1.0 and affected_set_recall is 1.0 with zero unnecessary touches.",
-        "bad_alternative_notes": "Ignoring the moratorium leaves a constraint violation each step; rezoning the whole district drops affected_set_precision to near-zero and racks up unnecessary_change_count; calling reserve_open_space on a developed block is REJECTED — only undeveloped or use=='park' blocks accept it."
+        "why_this_is_good": "Selectively fixes the single invalid block with the minimum-cost legal verb. The flood-risk shortcut means one action both clears the use and converts the block to a flood-compatible green buffer \u2014 greenery rises to 1.0 and affected_set_recall is 1.0 with zero unnecessary touches.",
+        "bad_alternative_notes": "Ignoring the moratorium leaves a constraint violation each step; rezoning the whole district drops affected_set_precision to near-zero and racks up unnecessary_change_count; calling reserve_open_space on a developed block is REJECTED \u2014 only undeveloped or use=='park' blocks accept it."
       }
     },
     {
@@ -288,28 +538,92 @@
       "phase_objective": "Reduce I1 infra usage by at least one heavy-block worth while keeping at least one commercial use.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "residential", "use": "housing", "amenity": "grocery", "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "commercial",  "use": "retail",  "amenity": null,      "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B3", "district": "I1", "zone": "open_space",  "use": "park",    "amenity": "park",    "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "residential",
+            "use": "housing",
+            "amenity": "grocery",
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "retail",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B3",
+            "district": "I1",
+            "zone": "open_space",
+            "use": "park",
+            "amenity": "park",
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.33,
-          "amenity_coverage": {"grocery": 1, "park": 1},
-          "blocks_by_use": {"housing": 1, "retail": 1, "park": 1},
-          "infra_zones": {"I1": {"water": [22, 25], "sewer": [16, 18], "power": [34, 36]}}
+          "amenity_coverage": {
+            "grocery": 1,
+            "park": 1
+          },
+          "blocks_by_use": {
+            "housing": 1,
+            "retail": 1,
+            "park": 1
+          },
+          "infra_zones": {
+            "I1": {
+              "water": [
+                22,
+                25
+              ],
+              "sewer": [
+                16,
+                18
+              ],
+              "power": [
+                34,
+                36
+              ]
+            }
+          }
         }
       },
-      "active_constraints": ["i1_capacity_tight", "min_greenery_20", "retain_commercial"],
-      "legal_actions_summary": ["redevelop(block_id, use)", "set_zoning(block_id, zone)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "i1_capacity_tight",
+        "min_greenery_20",
+        "retain_commercial"
+      ],
+      "legal_actions_summary": [
+        "redevelop(block_id, use)",
+        "set_zoning(block_id, zone)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
         "rationale": "The current verifier's redevelop only accepts a new `use` (it cannot change `zone` in one step), so I cannot turn commercial+retail into mixed+retail in a single action. The cleanest single-action fix that frees infra without dropping below 'one commercial use' is to swap B2's heavy retail for a lighter compatible use within the same commercial zone: office. That preserves commercial activity and shaves infra cost. B1 and B3 stay untouched.",
         "actions": [
-          {"action_type": "redevelop", "block_id": "B2", "use": "office"}
+          {
+            "action_type": "redevelop",
+            "block_id": "B2",
+            "use": "office"
+          }
         ]
       },
       "annotation": {
         "why_this_is_good": "Surgical fix: only the cost-heavy block is changed, the economic function is preserved (commercial+office still satisfies 'retain_commercial'), and verifier rules are respected. redevelop frees the old infra demand and re-allocates the new use's lower demand in one step.",
-        "bad_alternative_notes": "Trying to redevelop B2 with new_zone='mixed' would be REJECTED — the action has no new_zone field. Demolishing B3 (the park) would violate the greenery floor; rezoning B1 from residential to commercial would lose housing capacity and disturb an unaffected block."
+        "bad_alternative_notes": "Trying to redevelop B2 with new_zone='mixed' would be REJECTED \u2014 the action has no new_zone field. Demolishing B3 (the park) would violate the greenery floor; rezoning B1 from residential to commercial would lose housing capacity and disturb an unaffected block."
       }
     },
     {
@@ -323,28 +637,149 @@
       "phase_objective": "Zone the hub and adjacent blocks to maximise future housing capacity near transit.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B3", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B4", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B5", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B6", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B7", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B8", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B9", "district": "I1", "zone": "unzoned", "use": null, "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B3",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B4",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B5",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B6",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B7",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B8",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B9",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
-        "district_stats": {"greenery_ratio": 0.0, "blocks_by_use": {"undeveloped": 9}}
+        "district_stats": {
+          "greenery_ratio": 0.0,
+          "blocks_by_use": {
+            "undeveloped": 9
+          }
+        }
       },
-      "active_constraints": ["tod_concentrate_density", "min_future_housing_capacity_4"],
-      "legal_actions_summary": ["set_zoning(block_id, zone)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "tod_concentrate_density",
+        "min_future_housing_capacity_4"
+      ],
+      "legal_actions_summary": [
+        "set_zoning(block_id, zone)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
         "rationale": "TOD principle: highest activity at the transit core, high-density residential immediately adjacent. I zone B5 (centre) commercial to anchor the hub, and the four orthogonal neighbours (B2, B4, B6, B8) residential to feed walk-up density. Corner blocks (B1, B3, B7, B9) remain unzoned for later open space / mixed use.",
         "actions": [
-          {"action_type": "set_zoning", "block_id": "B5", "zone": "commercial"},
-          {"action_type": "set_zoning", "block_id": "B2", "zone": "residential"},
-          {"action_type": "set_zoning", "block_id": "B4", "zone": "residential"},
-          {"action_type": "set_zoning", "block_id": "B6", "zone": "residential"},
-          {"action_type": "set_zoning", "block_id": "B8", "zone": "residential"}
+          {
+            "action_type": "set_zoning",
+            "block_id": "B5",
+            "zone": "commercial"
+          },
+          {
+            "action_type": "set_zoning",
+            "block_id": "B2",
+            "zone": "residential"
+          },
+          {
+            "action_type": "set_zoning",
+            "block_id": "B4",
+            "zone": "residential"
+          },
+          {
+            "action_type": "set_zoning",
+            "block_id": "B6",
+            "zone": "residential"
+          },
+          {
+            "action_type": "set_zoning",
+            "block_id": "B8",
+            "zone": "residential"
+          }
         ]
       },
       "annotation": {
@@ -363,29 +798,145 @@
       "phase_objective": "Place a clinic that covers the residential cluster and add a green block to satisfy greenery_ratio >= 0.15.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "unzoned",     "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "residential", "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B3", "district": "I1", "zone": "unzoned",     "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B4", "district": "I1", "zone": "residential", "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B5", "district": "I1", "zone": "commercial",  "use": "retail","amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B6", "district": "I1", "zone": "residential", "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B7", "district": "I1", "zone": "unzoned",     "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B8", "district": "I1", "zone": "residential", "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B9", "district": "I1", "zone": "unzoned",     "use": null,    "amenity": null, "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "residential",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B3",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B4",
+            "district": "I1",
+            "zone": "residential",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B5",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "retail",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B6",
+            "district": "I1",
+            "zone": "residential",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B7",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B8",
+            "district": "I1",
+            "zone": "residential",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B9",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.0,
-          "amenity_coverage": {"school": 0, "clinic": 0, "grocery": 0, "park": 0, "fire": 0, "transit": 0},
-          "blocks_by_use": {"retail": 1, "undeveloped": 8}
+          "amenity_coverage": {
+            "school": 0,
+            "clinic": 0,
+            "grocery": 0,
+            "park": 0,
+            "fire": 0,
+            "transit": 0
+          },
+          "blocks_by_use": {
+            "retail": 1,
+            "undeveloped": 8
+          }
         }
       },
-      "active_constraints": ["min_district_clinic_coverage", "min_greenery_15", "amenity_zone_compat"],
-      "legal_actions_summary": ["assign_amenity(block_id, amenity_type)", "reserve_open_space(block_id)", "set_zoning(block_id, zone)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "min_district_clinic_coverage",
+        "min_greenery_15",
+        "amenity_zone_compat"
+      ],
+      "legal_actions_summary": [
+        "assign_amenity(block_id, amenity_type)",
+        "reserve_open_space(block_id)",
+        "set_zoning(block_id, zone)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "Clinic cannot sit on a residential block (verifier requires civic/mixed/commercial). B5 is the central commercial hub already developed as retail, so co-locating a clinic there gives walking-radius coverage to the four residential neighbours without spending a fresh block. For greenery, I reserve the corner B3 — keeping the residential ring intact and starting the climb toward the 15% floor.",
+        "rationale": "Clinic cannot sit on a residential block (verifier requires civic/mixed/commercial). B5 is the central commercial hub already developed as retail, so co-locating a clinic there gives walking-radius coverage to the four residential neighbours without spending a fresh block. For greenery, I reserve the corner B3 \u2014 keeping the residential ring intact and starting the climb toward the 15% floor.",
         "actions": [
-          {"action_type": "assign_amenity", "block_id": "B5", "amenity_type": "clinic"},
-          {"action_type": "reserve_open_space", "block_id": "B3"}
+          {
+            "action_type": "assign_amenity",
+            "block_id": "B5",
+            "amenity_type": "clinic"
+          },
+          {
+            "action_type": "reserve_open_space",
+            "block_id": "B3"
+          }
         ]
       },
       "annotation": {
@@ -404,27 +955,115 @@
       "phase_objective": "Restore housing_capacity >= 5 while respecting the heritage classification on B4.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "unzoned",     "use": null,            "amenity": null,      "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B2", "district": "I1", "zone": "residential", "use": "housing",       "amenity": "grocery", "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B3", "district": "I1", "zone": "open_space",  "use": "park",          "amenity": null,      "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B4", "district": "I1", "zone": "residential", "use": "housing",       "amenity": null,      "is_protected": true,  "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B5", "district": "I1", "zone": "commercial",  "use": "retail",        "amenity": null,      "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B6", "district": "I1", "zone": "unzoned",     "use": null,            "amenity": null,      "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B2",
+            "district": "I1",
+            "zone": "residential",
+            "use": "housing",
+            "amenity": "grocery",
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B3",
+            "district": "I1",
+            "zone": "open_space",
+            "use": "park",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B4",
+            "district": "I1",
+            "zone": "residential",
+            "use": "housing",
+            "amenity": null,
+            "is_protected": true,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B5",
+            "district": "I1",
+            "zone": "commercial",
+            "use": "retail",
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B6",
+            "district": "I1",
+            "zone": "unzoned",
+            "use": null,
+            "amenity": null,
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.166,
-          "blocks_by_use": {"housing": 2, "retail": 1, "park": 1, "undeveloped": 2},
-          "amenity_coverage": {"grocery": 1}
+          "blocks_by_use": {
+            "housing": 2,
+            "retail": 1,
+            "park": 1,
+            "undeveloped": 2
+          },
+          "amenity_coverage": {
+            "grocery": 1
+          }
         }
       },
-      "active_constraints": ["heritage_protected_b4", "target_housing_capacity_5", "min_greenery_15"],
-      "legal_actions_summary": ["redevelop(block_id, use)", "set_zoning(block_id, zone)", "develop(block_id, use)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "heritage_protected_b4",
+        "target_housing_capacity_5",
+        "min_greenery_15"
+      ],
+      "legal_actions_summary": [
+        "redevelop(block_id, use)",
+        "set_zoning(block_id, zone)",
+        "develop(block_id, use)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "B4 is now is_protected=true. The verifier's redevelop forces protected blocks to become open_space regardless of the requested `use`, so the cleanest legal move is redevelop(B4, use=null) — this clears the housing, frees infra, and turns B4 into a heritage-protected green parcel that also boosts greenery_ratio. To recover the lost housing slot I zone B6 residential and develop it with use=housing. B2, B3, B5 remain untouched.",
+        "rationale": "B4 is now is_protected=true. The verifier's redevelop forces protected blocks to become open_space regardless of the requested `use`, so the cleanest legal move is redevelop(B4, use=null) \u2014 this clears the housing, frees infra, and turns B4 into a heritage-protected green parcel that also boosts greenery_ratio. To recover the lost housing slot I zone B6 residential and develop it with use=housing. B2, B3, B5 remain untouched.",
         "actions": [
-          {"action_type": "redevelop", "block_id": "B4", "use": null},
-          {"action_type": "set_zoning", "block_id": "B6", "zone": "residential"},
-          {"action_type": "develop", "block_id": "B6", "use": "housing"}
+          {
+            "action_type": "redevelop",
+            "block_id": "B4",
+            "use": null
+          },
+          {
+            "action_type": "set_zoning",
+            "block_id": "B6",
+            "zone": "residential"
+          },
+          {
+            "action_type": "develop",
+            "block_id": "B6",
+            "use": "housing"
+          }
         ]
       },
       "annotation": {
@@ -443,22 +1082,65 @@
       "phase_objective": "Replace the obsolete fire amenity on B9 with a clinic to lift district_service_gap_count to zero.",
       "observation_summary": {
         "blocks": [
-          {"block_id": "B1", "district": "I1", "zone": "residential", "use": "housing",       "amenity": "grocery", "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0},
-          {"block_id": "B9", "district": "I1", "zone": "civic",       "use": "institutional", "amenity": "fire",    "is_protected": false, "is_floodrisk": false, "has_road_access": true, "infra_zone": "I1", "phase": 0}
+          {
+            "block_id": "B1",
+            "district": "I1",
+            "zone": "residential",
+            "use": "housing",
+            "amenity": "grocery",
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          },
+          {
+            "block_id": "B9",
+            "district": "I1",
+            "zone": "civic",
+            "use": "institutional",
+            "amenity": "fire",
+            "is_protected": false,
+            "has_road_access": true,
+            "infra_zone": "I1",
+            "phase": 0
+          }
         ],
         "district_stats": {
           "greenery_ratio": 0.2,
-          "blocks_by_use": {"housing": 1, "institutional": 1},
-          "amenity_coverage": {"grocery": 1, "fire": 1, "clinic": 0}
+          "blocks_by_use": {
+            "housing": 1,
+            "institutional": 1
+          },
+          "amenity_coverage": {
+            "grocery": 1,
+            "fire": 1,
+            "clinic": 0
+          }
         }
       },
-      "active_constraints": ["fire_demand_low", "clinic_demand_high", "min_district_clinic_coverage"],
-      "legal_actions_summary": ["redevelop(block_id, use)", "assign_amenity(block_id, amenity_type)", "defer(block_id, phase_id)"],
+      "active_constraints": [
+        "fire_demand_low",
+        "clinic_demand_high",
+        "min_district_clinic_coverage"
+      ],
+      "legal_actions_summary": [
+        "redevelop(block_id, use)",
+        "assign_amenity(block_id, amenity_type)",
+        "defer(block_id, phase_id)"
+      ],
       "expert_response": {
-        "rationale": "B9 is civic+institutional with the fire amenity. assign_amenity on a block that already has an amenity is REJECTED, so the only legal swap is to clear the existing amenity first. redevelop(B9, use='institutional') reuses the same use but, in clearing and re-applying it, also nulls out the amenity (per the verifier's redevelop logic), freeing the slot. I then assign_amenity clinic on the same block — civic zone allows clinic, the block is developed as institutional, and verifier co-locates without re-allocating infra. B1 stays untouched.",
+        "rationale": "B9 is civic+institutional with the fire amenity. assign_amenity on a block that already has an amenity is REJECTED, so the only legal swap is to clear the existing amenity first. redevelop(B9, use='institutional') reuses the same use but, in clearing and re-applying it, also nulls out the amenity (per the verifier's redevelop logic), freeing the slot. I then assign_amenity clinic on the same block \u2014 civic zone allows clinic, the block is developed as institutional, and verifier co-locates without re-allocating infra. B1 stays untouched.",
         "actions": [
-          {"action_type": "redevelop", "block_id": "B9", "use": "institutional"},
-          {"action_type": "assign_amenity", "block_id": "B9", "amenity_type": "clinic"}
+          {
+            "action_type": "redevelop",
+            "block_id": "B9",
+            "use": "institutional"
+          },
+          {
+            "action_type": "assign_amenity",
+            "block_id": "B9",
+            "amenity_type": "clinic"
+          }
         ]
       },
       "annotation": {

@@ -8,14 +8,14 @@ Two roles:
      the LLM to imitate them without manual labelling.
 
 This planner is privileged: it reads `WorldState` directly (per-block
-is_protected, is_floodrisk, infra demand, etc.). LLM baselines see only
+is_protected, infra demand, etc.). LLM baselines see only
 the observation. That's intentional — the heuristic is the "expert with
 ground truth", not a peer model.
 
 Strategy (single-pass greedy with one reactive replan after curveball):
 
   1. Triage blocks into:
-       - must_be_open : protected/floodrisk but reachable -> open_space
+       - must_be_open : protected but reachable -> open_space
        - must_defer   : no road access -> defer to a later phase
        - available    : everything else, sorted by infra cost ascending
   2. Allocate roles in this order, draining `available`:
@@ -83,17 +83,15 @@ def _detect_invalidated(world: WorldState) -> Tuple[List, List]:
     """Find blocks whose committed state conflicts with their current flags.
 
     Returns (developed_violations, zoned_only_violations). Curveballs that
-    flip a block to floodrisk/protected after it was already committed land
-    here and need to be cleared before re-planning.
+    flip a block to protected after it was already committed land here and
+    need to be cleared before re-planning.
     """
     dev_viol, zoned_viol = [], []
     for b in world.blocks.values():
         if b.is_developed:
-            if b.is_floodrisk and not b.reserved_open_space:
+            if b.is_protected and b.amenity != "park":
                 dev_viol.append(b)
-            elif b.is_protected and b.amenity != "park":
-                dev_viol.append(b)
-        elif (b.zone not in ("unzoned", "open_space")) and (b.is_floodrisk or b.is_protected):
+        elif (b.zone not in ("unzoned", "open_space")) and b.is_protected:
             # zoned for development but flags now block any compatible use
             zoned_viol.append(b)
     return dev_viol, zoned_viol
@@ -107,7 +105,7 @@ def _triage(world: WorldState, skip_ids: set) -> Tuple[list, list, list]:
             continue
         if b.is_developed or b.zone == "open_space" or b.reserved_open_space:
             continue  # already committed
-        if b.is_protected or b.is_floodrisk:
+        if b.is_protected:
             (must_be_open if b.has_road_access else no_road).append(b)
         elif not b.has_road_access:
             no_road.append(b)
@@ -327,9 +325,7 @@ def replan_after_curveball(world: WorldState) -> List[CivicflowAction]:
     for b in world.blocks.values():
         if not b.is_developed:
             continue
-        if b.is_floodrisk and not b.reserved_open_space:
-            affected.append(b)
-        elif b.is_protected and b.amenity != "park":
+        if b.is_protected and b.amenity != "park":
             affected.append(b)
     lost_uses: List[str] = []
     lost_amenities: List[str] = []
@@ -338,15 +334,15 @@ def replan_after_curveball(world: WorldState) -> List[CivicflowAction]:
             lost_uses.append(b.use)
         if b.amenity:
             lost_amenities.append(b.amenity)
-        # redevelop with no `use` is legal exactly when the block became
-        # floodrisk/protected — clears it and frees infra.
+        # redevelop with no `use` is legal when the block became protected —
+        # clears it and frees infra.
         actions.append(CivicflowAction(
             action_type="redevelop", block_id=b.block_id, use=None,
         ))
 
     # Find replacement blocks for what we lost
     available = [b for b in world.blocks.values()
-                 if not b.is_developed and not b.is_protected and not b.is_floodrisk
+                 if not b.is_developed and not b.is_protected
                  and b.has_road_access and b.phase == 0]
     available.sort(key=lambda b: b.water_demand + b.sewer_demand + b.power_demand)
 
